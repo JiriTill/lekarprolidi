@@ -2,17 +2,17 @@ export default async function handler(req, res) {
   console.log("Translate API was called");
 
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: "Pouze metoda POST je povolena" });
+    return res.status(405).json({ error: "Method not allowed" });
   }
 
   const { type, content, prompt } = req.body;
 
   if (!content || !prompt) {
-    return res.status(400).json({ error: "Chybí obsah nebo prompt." });
+    return res.status(400).json({ error: 'Chybí obsah nebo prompt.' });
   }
 
   try {
-    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
@@ -29,20 +29,18 @@ export default async function handler(req, res) {
       }),
     });
 
-    const json = await openaiResponse.json();
+    const json = await response.json();
 
     if (json.error) {
-      console.error("Chyba OpenAI:", json.error);
+      console.error('Chyba OpenAI:', json.error);
       return res.status(500).json({ error: json.error.message });
     }
 
     const result = json.choices?.[0]?.message?.content?.trim();
-
-    console.log("Výstup GPT:", result?.substring(0, 100));
-
     return res.status(200).json({ result });
   } catch (error) {
-    console.error("Chyba při komunikaci s OpenAI:", error);
-    return res.status(500).json({ error: "Došlo k chybě při komunikaci s OpenAI." });
+    console.error('Chyba při komunikaci s OpenAI:', error);
+    return res.status(500).json({ error: 'Došlo k chybě při komunikaci s OpenAI.' });
   }
 }
+
