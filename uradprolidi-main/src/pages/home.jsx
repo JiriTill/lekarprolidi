@@ -168,19 +168,19 @@ export default function Home() {
     <div className="min-h-screen bg-gray-100 flex flex-col justify-between">
       <main className="p-6 font-sans flex-grow flex items-center justify-center">
         <div className="max-w-2xl w-full bg-white rounded-lg shadow-md p-8">
-          <h1 className="text-4xl font-bold mb-2 text-center text-gray-900">Úřad pro lidi</h1>
+          <h1 className="text-4xl font-bold mb-2 text-center text-gray-900">Lékař pro lidi</h1>
           <p className="mb-2 text-center text-gray-700">
-            Úřady mluví jazykem, kterému rozumí jen úřady. My to přeložíme do člověčiny.
+            Lékařské zprávy jsou občas oříškem pro samotné lékaře a proto je překládáme do lidské řeči.
           </p>
           <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 p-4 rounded text-sm mb-2 shadow">
-            <p><strong>Vložte svůj úřední dokument</strong>, kterému nerozumíte, a my vám ho přeložíme do srozumitelné řeči. Řekneme vám, co po vás úředník vlastně chce.</p>
+            <p><strong>Vložte svou lékařskou zprávu</strong>, které nerozumíte, a my vám ji přeložíme do lidské řeči. Nově vám také vysvětlíme váš rozbor krve.</p>
           </div>
 
           <p className="font-medium text-gray-800 mb-2">Vložte text, nebo nahrajte čitelný dokument (PDF nebo fotku):</p>
 
           <div className="flex flex-col gap-4 mb-4">
             <textarea
-              placeholder="Sem vložte text z úřadu..."
+              placeholder="Sem vložte text z lékařské zprávy..."
               className="p-4 border border-gray-300 rounded bg-white shadow resize-none"
               rows={8}
               value={inputText.startsWith('data:image/') ? '' : inputText}
@@ -210,7 +210,7 @@ export default function Home() {
           <div className="bg-gray-50 rounded border p-4 mb-6 text-sm text-gray-700 space-y-2">
             <label className="block">
               <input type="checkbox" className="mr-2" checked={consentChecked} onChange={(e) => setConsentChecked(e.target.checked)} />
-              Rozumím, že výstup není právní rada.
+              Rozumím, že výstup není profesionální lékařská rada.
             </label>
             <label className="block">
               <input type="checkbox" className="mr-2" checked={gdprChecked} onChange={(e) => setGdprChecked(e.target.checked)} />
@@ -228,7 +228,7 @@ export default function Home() {
               onClick={handleSubmit}
               disabled={!consentChecked || !gdprChecked}
             >
-              Přelož do člověčiny
+              Přelož do lidské řeči
             </button>
             <button
               className="flex-1 bg-gray-300 text-gray-800 py-3 rounded-lg text-lg font-semibold hover:bg-gray-400 transition shadow"
@@ -262,8 +262,11 @@ export default function Home() {
           <a href="/o-projektu" className="hover:underline">O projektu</a>
           <a href="/jak-to-funguje" className="hover:underline">Jak to funguje</a>
           <a href="/gdpr" className="hover:underline">Zpracování dat</a>
+          <Link to="https://uradprolidi.vercel.app" className="hover:underline" target="_blank">
+            Úřad pro lidi
+          </Link>
         </div>
-        <p className="mt-2">&copy; {new Date().getFullYear()} Úřad pro lidi</p>
+        <p className="mt-2">&copy; {new Date().getFullYear()} Lékař pro lidi</p>
       </footer>
     </div>
   );
