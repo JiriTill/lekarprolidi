@@ -3,6 +3,7 @@ import * as pdfjsLib from 'pdfjs-dist/build/pdf';
 import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.entry';
 import FeedbackForm from '../components/FeedbackForm';
 import { Link } from 'react-router-dom';
+import Tesseract from 'tesseract.js';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
@@ -73,16 +74,7 @@ export default function Home() {
         }
       };
       reader.readAsArrayBuffer(file);
-    } else if (isImage) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setInputText(reader.result);
-        setUploadSuccess(true);
-      };
-      reader.readAsDataURL(file);
-    } else {
-      alert('⚠️ Podporovány jsou pouze PDF a obrázky.');
-    }
+    import Tesseract from 'tesseract.js';
   };
 
   const handleCameraCapture = () => {
