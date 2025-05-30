@@ -1,6 +1,27 @@
 // api/translate.js
 
 export default async function handler(req, res) {
+  console.log("Translate API was called");
+
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
+
+  try {
+    const { input, image, prompt } = req.body;
+
+    console.log("Received input:", input?.substring(0, 100));
+    console.log("Prompt type:", prompt);
+
+    // Zbytek původního kódu…
+
+  } catch (error) {
+    console.error("Server error:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+}
+
+export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Pouze metoda POST je povolena' });
   }
