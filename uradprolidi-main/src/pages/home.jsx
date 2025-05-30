@@ -169,9 +169,20 @@ export default function Home() {
       <main className="p-6 font-sans flex-grow flex items-center justify-center">
         <div className="max-w-2xl w-full bg-white rounded-lg shadow-md p-8">
           <h1 className="text-4xl font-bold mb-2 text-center text-gray-900">Lékař pro lidi</h1>
-          <p className="mb-2 text-center text-gray-700">
-            Lékařské zprávy jsou občas oříškem i pro samotné lékaře. Přeložíme je do lidské řeči.
-          </p>
+
+              <p className="mb-4 text-center text-gray-700 text-lg">
+                Lékařské zprávy a krevní rozbory jsou někdy oříškem i pro samotné lékaře. <br />
+                Proto jsme vytvořili nástroj, který vám je přeloží do srozumitelné lidské řeči.
+              </p>
+              
+              <div className="bg-blue-50 border-l-4 border-blue-400 text-blue-900 p-4 rounded shadow text-sm mb-6">
+                <p className="font-semibold mb-2">Jak to funguje?</p>
+                <ol className="list-decimal ml-6 space-y-1">
+                  <li>Vyberte, co chcete přeložit – lékařskou zprávu nebo rozbor krve.</li>
+                  <li>Vložte text, nebo nahrajte dokument / fotku z mobilu.</li>
+                  <li>Za pár sekund obdržíte srozumitelný výklad, kterému porozumí každý.</li>
+                </ol>
+              </div>
 
           <div className="mb-4">
             <label className="block font-medium text-gray-800 mb-2">Zvolte typ dokumentu:</label>
