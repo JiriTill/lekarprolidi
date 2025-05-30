@@ -171,8 +171,8 @@ export default function Home() {
           <h1 className="text-4xl font-bold mb-2 text-center text-gray-900">Lékař pro lidi</h1>
 
               <p className="mb-4 text-center text-gray-700 text-lg">
-                Lékařské zprávy a krevní rozbory jsou někdy oříškem i pro samotné lékaře. <br />
-                Proto jsme vytvořili nástroj, který vám je přeloží do srozumitelné lidské řeči.
+                Lékařské zprávy jsou někdy oříškem i pro samotné lékaře. <br />
+                Proto jsem vytvořil nástroj, který vám je přeloží do srozumitelné lidské řeči.
               </p>
               
               <div className="bg-blue-50 border-l-4 border-blue-400 text-blue-900 p-4 rounded shadow text-sm mb-6">
