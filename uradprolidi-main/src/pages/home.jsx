@@ -16,6 +16,7 @@ export default function Home() {
   const [gdprChecked, setGdprChecked] = useState(false);
   const [loading, setLoading] = useState(false);
   const [seconds, setSeconds] = useState(0);
+  const [mode, setMode] = useState('report');
 
   useEffect(() => {
     let timer;
@@ -125,6 +126,7 @@ export default function Home() {
         body: JSON.stringify({
           type: isImage ? 'image' : 'text',
           content: isImage ? inputText : pdfText || inputText,
+          mode: mode,
         }),
       });
 
@@ -152,14 +154,11 @@ export default function Home() {
 
   const renderStructuredOutput = () => {
     if (!output) return null;
-
-    const sections = output.split(/(?=🏛️|👤|🆔|📬|🧾|🟨|📌|📣|📎)/g);
+    const sections = output.split(/(?=\ud83c\udfe6|\ud83d\udc64|\ud83c\udd94|\ud83d\udcec|\ud83e\uddfe|\ud83d\udcc8|\ud83d\udccc|\ud83d\udce3|\ud83d\udccc)/g);
     return (
       <div className="bg-white border rounded shadow p-4 mb-4 whitespace-pre-wrap text-gray-800">
         {sections.map((section, index) => (
-          <div key={index} className="mb-3">
-            {section.trim()}
-          </div>
+          <div key={index} className="mb-3">{section.trim()}</div>
         ))}
       </div>
     );
@@ -171,42 +170,41 @@ export default function Home() {
         <div className="max-w-2xl w-full bg-white rounded-lg shadow-md p-8">
           <h1 className="text-4xl font-bold mb-2 text-center text-gray-900">Lékař pro lidi</h1>
           <p className="mb-2 text-center text-gray-700">
-            Lékařské zprávy jsou občas oříškem pro samotné lékaře a proto je překládáme do lidské řeči.
+            Lékařské zprávy jsou občas oříškem i pro samotné lékaře. Přeložíme je do lidské řeči.
           </p>
-          <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 p-4 rounded text-sm mb-2 shadow">
-            <p><strong>Vložte svou lékařskou zprávu</strong>, které nerozumíte, a my vám ji přeložíme do lidské řeči. Nově vám také vysvětlíme váš rozbor krve.</p>
-          </div>
 
-          <p className="font-medium text-gray-800 mb-2">Vložte text, nebo nahrajte čitelný dokument (PDF nebo fotku):</p>
-
-          <div className="flex flex-col gap-4 mb-4">
-            <textarea
-              placeholder="Sem vložte text z lékařské zprávy..."
-              className="p-4 border border-gray-300 rounded bg-white shadow resize-none"
-              rows={8}
-              value={inputText.startsWith('data:image/') ? '' : inputText}
-              onChange={(e) => setInputText(e.target.value)}
-            />
-
-            <div>
-              <label className="block mb-1 text-gray-700 font-medium">Nahrát PDF nebo fotku (.pdf, .jpg, .png):</label>
-              <div className="flex items-center gap-2">
-                <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={handlePDFUpload} className="block" />
-                {uploadSuccess && <span className="text-green-600 text-xl">✅</span>}
-              </div>
-            </div>
-
-            <div>
-              <button
-                type="button"
-                className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded transition"
-                onClick={handleCameraCapture}
-              >
-                {cameraUploadSuccess ? '✅ Správně nahráno' : '📷 Vyfotit dokument mobilem'}
-              </button>
-              <p className="text-sm text-gray-600 mt-1">Funguje jen na mobilu. Text na fotce musí být dobře čitelný.</p>
+          <div className="mb-4">
+            <label className="block font-medium text-gray-800 mb-2">Zvolte typ dokumentu:</label>
+            <div className="flex gap-4">
+              <label className="flex items-center gap-2">
+                <input type="radio" name="mode" value="report" checked={mode === 'report'} onChange={() => setMode('report')} />
+                Lékařská zpráva
+              </label>
+              <label className="flex items-center gap-2">
+                <input type="radio" name="mode" value="blood" checked={mode === 'blood'} onChange={() => setMode('blood')} />
+                Rozbor krve
+              </label>
             </div>
           </div>
+
+          <textarea
+            placeholder="Sem vložte text..."
+            className="p-4 border border-gray-300 rounded bg-white shadow resize-none w-full mb-4"
+            rows={8}
+            value={inputText.startsWith('data:image/') ? '' : inputText}
+            onChange={(e) => setInputText(e.target.value)}
+          />
+
+          <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={handlePDFUpload} className="mb-4" />
+          {uploadSuccess && <span className="text-green-600 text-xl">✅</span>}
+
+          <button
+            type="button"
+            className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded transition mb-4"
+            onClick={handleCameraCapture}
+          >
+            {cameraUploadSuccess ? '✅ Správně nahráno' : '📷 Vyfotit dokument mobilem'}
+          </button>
 
           <div className="bg-gray-50 rounded border p-4 mb-6 text-sm text-gray-700 space-y-2">
             <label className="block">
@@ -222,9 +220,7 @@ export default function Home() {
           <div className="flex gap-4 mb-4">
             <button
               className={`flex-1 py-3 rounded-lg text-lg font-semibold transition shadow ${
-                consentChecked && gdprChecked
-                  ? 'bg-blue-600 text-white hover:bg-blue-700'
-                  : 'bg-gray-400 text-white cursor-not-allowed'
+                consentChecked && gdprChecked ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-gray-400 text-white cursor-not-allowed'
               }`}
               onClick={handleSubmit}
               disabled={!consentChecked || !gdprChecked}
@@ -250,8 +246,6 @@ export default function Home() {
             <div className="mt-10">
               <h2 className="text-2xl font-semibold mb-4 text-gray-800">Výstup:</h2>
               {renderStructuredOutput()}
-          
-              {/* Komponenta pro zpětnou vazbu */}
               <FeedbackForm />
             </div>
           )}
@@ -263,9 +257,7 @@ export default function Home() {
           <a href="/o-projektu" className="hover:underline">O projektu</a>
           <a href="/jak-to-funguje" className="hover:underline">Jak to funguje</a>
           <a href="/gdpr" className="hover:underline">Zpracování dat</a>
-          <Link to="https://uradprolidi.vercel.app" className="hover:underline" target="_blank">
-            Úřad pro lidi
-          </Link>
+          <Link to="https://uradprolidi.vercel.app" className="hover:underline" target="_blank">Úřad pro lidi</Link>
         </div>
         <p className="mt-2">&copy; {new Date().getFullYear()} Lékař pro lidi</p>
       </footer>
