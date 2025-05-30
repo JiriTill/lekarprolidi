@@ -17,6 +17,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [seconds, setSeconds] = useState(0);
   const [mode, setMode] = useState('report');
+  const [selectedType, setSelectedType] = useState(null);
 
   useEffect(() => {
     let timer;
@@ -109,36 +110,52 @@ export default function Home() {
     document.body.removeChild(input);
   };
 
-  const handleSubmit = async () => {
-    if (!inputText && !pdfText) {
-      alert('⚠️ Nezadal jsi žádný text ani nenahrál dokument.');
-      return;
-    }
+    const handleSubmit = async () => {
+      if (!selectedType) {
+        alert('⚠️ Vyberte, čemu chcete rozumět – lékařskou zprávu nebo rozbor krve.');
+        return;
+      }
+    
+      if (!inputText && !pdfText) {
+        alert('⚠️ Nezadal jsi žádný text ani nenahrál dokument.');
+        return;
+      }
+    
+      setLoading(true);
+      setOutput('');
+    
+      try {
+        const isImage = inputText.startsWith('data:image/');
+    
+        // PROMPTY
+        let prompt = '';
+    
+        if (selectedType === 'zprava') {
+          prompt = `Vysvětli následující lékařskou zprávu lidským jazykem. Zaměř se pouze na to, co lékař píše, bez jakýchkoli doporučení nebo názorů. Na konci přidej poznámku: "⚠️ Toto není lékařská rada, pouze srozumitelný překlad zprávy."`;
+        } else if (selectedType === 'rozbor') {
+          prompt = `Vysvětli jednotlivé hodnoty v tomto krevním rozboru lidským jazykem. Neuváděj žádné diagnózy ani doporučení. Na konci přidej poznámku: "⚠️ Toto není lékařská rada, pouze srozumitelné vysvětlení hodnot."`;
+        }
+    
+        const response = await fetch('/api/translate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: isImage ? 'image' : 'text',
+            content: isImage ? inputText : pdfText || inputText,
+            prompt: prompt,
+          }),
+        });
+    
+        const data = await response.json();
+        setOutput(data.result || '⚠️ Odpověď je prázdná.');
+      } catch (error) {
+        console.error(error);
+        setOutput('⚠️ Došlo k chybě při komunikaci se serverem.');
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    setLoading(true);
-    setOutput('');
-
-    try {
-      const isImage = inputText.startsWith('data:image/');
-      const response = await fetch('/api/translate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: isImage ? 'image' : 'text',
-          content: isImage ? inputText : pdfText || inputText,
-          mode: mode,
-        }),
-      });
-
-      const data = await response.json();
-      setOutput(data.result || '⚠️ Odpověď je prázdná.');
-    } catch (error) {
-      console.error(error);
-      setOutput('⚠️ Došlo k chybě při komunikaci se serverem.');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleClear = () => {
     setInputText('');
@@ -184,19 +201,21 @@ export default function Home() {
                 </ol>
               </div>
 
-          <div className="mb-4">
-            <label className="block font-medium text-gray-800 mb-2">Zvolte typ dokumentu:</label>
-            <div className="flex gap-4">
-              <label className="flex items-center gap-2">
-                <input type="radio" name="mode" value="report" checked={mode === 'report'} onChange={() => setMode('report')} />
-                Lékařská zpráva
-              </label>
-              <label className="flex items-center gap-2">
-                <input type="radio" name="mode" value="blood" checked={mode === 'blood'} onChange={() => setMode('blood')} />
-                Rozbor krve
-              </label>
-            </div>
-          </div>
+              <div className="flex justify-center gap-4 mb-6">
+                <button
+                  className={`px-4 py-2 rounded ${selectedType === 'zprava' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
+                  onClick={() => setSelectedType('zprava')}
+                >
+                  📄 Lékařská zpráva
+                </button>
+                <button
+                  className={`px-4 py-2 rounded ${selectedType === 'rozbor' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
+                  onClick={() => setSelectedType('rozbor')}
+                >
+                  💉 Rozbor krve
+                </button>
+              </div>
+
 
           <textarea
             placeholder="Sem vložte text..."
