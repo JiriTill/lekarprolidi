@@ -32,50 +32,75 @@ export default function Home() {
   }, [loading]);
 
   const handlePDFUpload = (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    const isPDF = file.type === 'application/pdf';
-    const isImage = file.type.startsWith('image/');
-
-    if (isPDF) {
-      const reader = new FileReader();
-      reader.onload = async () => {
-        try {
-          const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(reader.result) });
-          const pdf = await loadingTask.promise;
-          let fullText = '';
-
-          for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-            const page = await pdf.getPage(pageNum);
-            const content = await page.getTextContent();
-            fullText += content.items.map((item) => item.str).join(' ') + '\n';
+      const file = event.target.files[0];
+      if (!file) return;
+    
+      const isPDF = file.type === 'application/pdf';
+      const isImage = file.type.startsWith('image/');
+    
+      if (isPDF) {
+        const reader = new FileReader();
+        reader.onload = async () => {
+          try {
+            const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(reader.result) });
+            const pdf = await loadingTask.promise;
+            let fullText = '';
+    
+            for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+              const page = await pdf.getPage(pageNum);
+              const content = await page.getTextContent();
+              fullText += content.items.map((item) => item.str).join(' ') + '\n';
+            }
+    
+            if (fullText.trim().length > 10) {
+              setPdfText(fullText);
+            } else {
+              const canvas = document.createElement('canvas');
+              const context = canvas.getContext('2d');
+              const page = await pdf.getPage(1);
+              const viewport = page.getViewport({ scale: 2.0 });
+    
+              canvas.width = viewport.width;
+              canvas.height = viewport.height;
+              await page.render({ canvasContext: context, viewport }).promise;
+              const imageData = canvas.toDataURL();
+              setInputText(imageData);
+            }
+    
+            setUploadSuccess(true);
+          } catch (error) {
+            console.error("Chyba při zpracování PDF:", error);
+            alert('⚠️ Chyba při čtení PDF. Ujistěte se, že soubor je čitelný.');
           }
-
-          if (fullText.trim().length > 10) {
-            setPdfText(fullText);
-          } else {
-            const canvas = document.createElement('canvas');
-            const context = canvas.getContext('2d');
-            const page = await pdf.getPage(1);
-            const viewport = page.getViewport({ scale: 2.0 });
-
-            canvas.width = viewport.width;
-            canvas.height = viewport.height;
-            await page.render({ canvasContext: context, viewport }).promise;
-            const imageData = canvas.toDataURL();
-            setInputText(imageData);
-          }
-
-          setUploadSuccess(true);
-        } catch (error) {
-          console.error("Chyba při zpracování PDF:", error);
-          alert('⚠️ Chyba při čtení PDF. Ujistěte se, že soubor je čitelný.');
-        }
-      };
+        };
         reader.readAsArrayBuffer(file);
-    }
-  };
+      }
+    
+      // 🖼️ Handle image upload with OCR
+      else if (isImage) {
+        const reader = new FileReader();
+        reader.onload = async () => {
+          const imageDataUrl = reader.result;
+    
+          try {
+            const { data: { text } } = await Tesseract.recognize(imageDataUrl, 'ces', {
+              logger: (m) => console.log(m),
+            });
+    
+            if (text.trim().length < 5) {
+              alert('⚠️ OCR nerozpoznal žádný čitelný text.');
+            } else {
+              setInputText(text);
+              setUploadSuccess(true);
+            }
+          } catch (err) {
+            console.error('OCR error:', err);
+            alert('⚠️ Nepodařilo se načíst obrázek. Zkuste jiný soubor.');
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+    };
 
   const handleCameraCapture = () => {
     const input = document.createElement('input');
