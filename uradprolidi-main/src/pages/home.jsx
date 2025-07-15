@@ -131,12 +131,14 @@ const handleSubmit = async () => {
     return;
   }
 
-  const finalText = inputText || pdfText;
+    const isImage = inputText.startsWith('data:image/');
+    const finalText = isImage ? inputText : (pdfText || inputText);
+    
+    if (!finalText || (!isImage && finalText.trim().length < 5)) {
+      alert('⚠️ Nezadal jsi žádný text ani nenahrál dokument.');
+      return;
+    }
 
-  if (!finalText || finalText.trim().length < 5) {
-    alert('⚠️ Nezadal jsi žádný text ani nenahrál dokument.');
-    return;
-  }
 
   setLoading(true);
   setOutput('');
