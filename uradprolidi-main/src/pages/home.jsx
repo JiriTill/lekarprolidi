@@ -193,7 +193,7 @@ export default function Home() {
 
               <p className="mb-4 text-center text-gray-700 text-lg">
                 Lékařské zprávy jsou někdy oříškem i pro samotné lékaře. <br />
-                Proto jsem vytvořil nástroj, který vám je přeloží do srozumitelné lidské řeči.
+                Proto jsem vytvořil nástroj, který vám je přeloží do srozumitelné lidské řeči, člověčiny.
               </p>
               
               <div className="bg-blue-50 border-l-4 border-blue-400 text-blue-900 p-4 rounded shadow text-sm mb-6">
