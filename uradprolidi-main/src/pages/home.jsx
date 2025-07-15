@@ -31,76 +31,74 @@ export default function Home() {
     return () => clearInterval(timer);
   }, [loading]);
 
-  const handlePDFUpload = (event) => {
-      const file = event.target.files[0];
-      if (!file) return;
-    
-      const isPDF = file.type === 'application/pdf';
-      const isImage = file.type.startsWith('image/');
-    
-      if (isPDF) {
-        const reader = new FileReader();
-        reader.onload = async () => {
-          try {
-            const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(reader.result) });
-            const pdf = await loadingTask.promise;
-            let fullText = '';
-    
-            for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-              const page = await pdf.getPage(pageNum);
-              const content = await page.getTextContent();
-              fullText += content.items.map((item) => item.str).join(' ') + '\n';
-            }
-    
-            if (fullText.trim().length > 10) {
-              setPdfText(fullText);
-            } else {
-              const canvas = document.createElement('canvas');
-              const context = canvas.getContext('2d');
-              const page = await pdf.getPage(1);
-              const viewport = page.getViewport({ scale: 2.0 });
-    
-              canvas.width = viewport.width;
-              canvas.height = viewport.height;
-              await page.render({ canvasContext: context, viewport }).promise;
-              const imageData = canvas.toDataURL();
-              setInputText(imageData);
-            }
-    
-            setUploadSuccess(true);
-          } catch (error) {
-            console.error("Chyba při zpracování PDF:", error);
-            alert('⚠️ Chyba při čtení PDF. Ujistěte se, že soubor je čitelný.');
-          }
-        };
-        reader.readAsArrayBuffer(file);
-      }
-    
-      // 🖼️ Handle image upload with OCR
-      else if (isImage) {
-        const reader = new FileReader();
-        reader.onload = async () => {
-          const imageDataUrl = reader.result;
-    
-          try {
-            const { data: { text } } = await Tesseract.recognize(imageDataUrl, 'ces', {
-              logger: (m) => console.log(m),
-            });
-    
-            if (text.trim().length < 5) {
-              alert('⚠️ OCR nerozpoznal žádný čitelný text.');
-            } else {
-              setInputText(text);
-              setUploadSuccess(true);
-            }
-          } catch (err) {
-            console.error('OCR error:', err);
-            alert('⚠️ Nepodařilo se načíst obrázek. Zkuste jiný soubor.');
-          }
-        };
-        reader.readAsDataURL(file);
+ const handlePDFUpload = (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const isPDF = file.type === 'application/pdf';
+  const isImage = file.type.startsWith('image/');
+
+  if (isPDF) {
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(reader.result) });
+        const pdf = await loadingTask.promise;
+        let fullText = '';
+
+        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+          const page = await pdf.getPage(pageNum);
+          const content = await page.getTextContent();
+          fullText += content.items.map((item) => item.str).join(' ') + '\n';
+        }
+
+        if (fullText.trim().length > 10) {
+          setPdfText(fullText);
+        } else {
+          const canvas = document.createElement('canvas');
+          const context = canvas.getContext('2d');
+          const page = await pdf.getPage(1);
+          const viewport = page.getViewport({ scale: 2.0 });
+
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+          await page.render({ canvasContext: context, viewport }).promise;
+          const imageData = canvas.toDataURL();
+
+          const { data: { text } } = await Tesseract.recognize(imageData, 'ces', {
+            logger: (m) => console.log(m),
+          });
+
+          setPdfText(text);
+        }
+
+        setUploadSuccess(true);
+      } catch (error) {
+        console.error("Chyba při zpracování PDF:", error);
+        alert('⚠️ Chyba při čtení PDF. Ujistěte se, že soubor je čitelný.');
       }
     };
+    reader.readAsArrayBuffer(file);
+  }
+
+  else if (isImage) {
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        const { data: { text } } = await Tesseract.recognize(reader.result, 'ces', {
+          logger: (m) => console.log(m),
+        });
+
+        setPdfText(text); // ✅ Not inputText!
+        setUploadSuccess(true);
+      } catch (err) {
+        console.error('OCR chyba:', err);
+        alert('⚠️ Nepodařilo se načíst obrázek. Zkuste jiný soubor.');
+      }
+    };
+    reader.readAsDataURL(file);
+  }
+};
 
   const handleCameraCapture = () => {
     const input = document.createElement('input');
@@ -127,81 +125,50 @@ export default function Home() {
     document.body.removeChild(input);
   };
 
-  const handleSubmit = async () => {
-    if (!selectedType) {
-      alert('⚠️ Vyberte, čemu chcete rozumět – lékařskou zprávu nebo rozbor krve.');
-      return;
-    }
-  
-    if (!inputText && !pdfText) {
-      alert('⚠️ Nezadal jsi žádný text ani nenahrál dokument.');
-      return;
-    }
-    
-    const isImage = inputText.startsWith('data:image/');
-    const hasImage = isImage && inputText.length > 100; // image uploaded
-    const hasText = !isImage && (inputText.trim().length > 0 || pdfText.trim().length > 0);
-    
-    if (!hasImage && !hasText) {
-      alert('⚠️ Nezadal jsi žádný text ani nenahrál čitelný obrázek.');
-      return;
-    }
-  
-    setLoading(true);
-    setOutput('');
-  
-    try {
-      const isImage = inputText.startsWith('data:image/');
-      let extractedText = '';
-  
-      if (isImage) {
-        const { data: { text } } = await Tesseract.recognize(inputText, 'ces', {
-          logger: (m) => console.log(m), // Optional: logs progress
-        });
-  
-        if (text.trim().length < 5) {
-          throw new Error("OCR nerozpoznal žádný čitelný text.");
-        }
-  
-        extractedText = text;
-      }
-  
-      // PROMPTY
-      let prompt = '';
-  
-      if (selectedType === 'zprava') {
-        prompt = `Vysvětli následující lékařskou zprávu lidským jazykem. Zaměř se pouze na to, co lékař píše, bez jakýchkoli doporučení nebo názorů. Na konci přidej poznámku: "⚠️ Toto není lékařská rada, pouze srozumitelný překlad zprávy."`;
-      } else if (selectedType === 'rozbor') {
-        prompt = `Vysvětli jednotlivé hodnoty v tomto krevním rozboru lidským jazykem. Neuváděj žádné diagnózy ani doporučení. Na konci přidej poznámku: "⚠️ Toto není lékařská rada, pouze srozumitelné vysvětlení hodnot."`;
-      }
-  
-      const response = await fetch
+const handleSubmit = async () => {
+  if (!selectedType) {
+    alert('⚠️ Vyberte, čemu chcete rozumět – lékařskou zprávu nebo rozbor krve.');
+    return;
+  }
 
-        console.log({
-          type: isImage ? 'image' : 'text',
-          content: isImage ? extractedText : pdfText || inputText,
-          prompt
-        });
-        
-        ('/api/translate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: isImage ? 'image' : 'text',
-          content: isImage ? extractedText : pdfText || inputText,
-          prompt: prompt,
-        }),
-      });
-  
-      const data = await response.json();
-      setOutput(data.result || '⚠️ Odpověď je prázdná.');
-    } catch (error) {
-      console.error(error);
-      setOutput('⚠️ Došlo k chybě při zpracování. Ujistěte se, že obrázek nebo PDF obsahuje čitelný text.');
-    } finally {
-      setLoading(false);
+  const finalText = inputText || pdfText;
+
+  if (!finalText || finalText.trim().length < 5) {
+    alert('⚠️ Nezadal jsi žádný text ani nenahrál dokument.');
+    return;
+  }
+
+  setLoading(true);
+  setOutput('');
+
+  try {
+    // Prompt based on selected type
+    let prompt = '';
+    if (selectedType === 'zprava') {
+      prompt = `Vysvětli následující lékařskou zprávu lidským jazykem... ⚠️ Toto není lékařská rada, pouze srozumitelný překlad zprávy.`;
+    } else if (selectedType === 'rozbor') {
+      prompt = `Vysvětli jednotlivé hodnoty v tomto krevním rozboru lidským jazykem... ⚠️ Toto není lékařská rada, pouze srozumitelné vysvětlení hodnot.`;
     }
-  };
+
+    const response = await fetch('/api/translate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: 'text',
+        content: finalText,
+        prompt,
+      }),
+    });
+
+    const data = await response.json();
+    setOutput(data.result || '⚠️ Odpověď je prázdná.');
+  } catch (error) {
+    console.error(error);
+    setOutput('⚠️ Došlo k chybě při zpracování. Ujistěte se, že obrázek nebo PDF obsahuje čitelný text.');
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleClear = () => {
     setInputText('');
