@@ -265,13 +265,16 @@ const handleSubmit = async () => {
           <div className="flex gap-4 mb-4">
             <button
               className={`flex-1 py-3 rounded-lg text-lg font-semibold transition shadow ${
-                consentChecked && gdprChecked ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-gray-400 text-white cursor-not-allowed'
+                consentChecked && gdprChecked && (inputText || pdfText)
+                  ? 'bg-blue-600 text-white hover:bg-blue-700'
+                  : 'bg-gray-400 text-white cursor-not-allowed'
               }`}
               onClick={handleSubmit}
-              disabled={!consentChecked || !gdprChecked}
+              disabled={!consentChecked || !gdprChecked || (!inputText && !pdfText)}
             >
               Přelož do lidské řeči
             </button>
+
             <button
               className="flex-1 bg-gray-300 text-gray-800 py-3 rounded-lg text-lg font-semibold hover:bg-gray-400 transition shadow"
               onClick={handleClear}
