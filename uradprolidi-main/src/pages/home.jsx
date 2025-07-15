@@ -112,6 +112,15 @@ export default function Home() {
       alert('⚠️ Nezadal jsi žádný text ani nenahrál dokument.');
       return;
     }
+    
+    const isImage = inputText.startsWith('data:image/');
+    const hasImage = isImage && inputText.length > 100; // image uploaded
+    const hasText = !isImage && (inputText.trim().length > 0 || pdfText.trim().length > 0);
+    
+    if (!hasImage && !hasText) {
+      alert('⚠️ Nezadal jsi žádný text ani nenahrál čitelný obrázek.');
+      return;
+    }
   
     setLoading(true);
     setOutput('');
