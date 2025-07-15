@@ -289,9 +289,12 @@ const handleSubmit = async () => {
           </div>
 
           {loading && (
-            <div className="flex items-center gap-2 text-blue-600 text-sm mt-4">
-              <span className="animate-spin">🔄</span>
-              <span>Zpracovávám... ({seconds}s)</span>
+            <div className="flex flex-col items-center text-blue-600 text-sm mt-4">
+              <p className="mb-1">⏳ Překlad může trvat až 60 vteřin. Díky za trpělivost.</p>
+              <div className="flex items-center gap-2">
+                <span className="animate-spin">🔄</span>
+                <span>Zpracovávám... ({seconds}s)</span>
+              </div>
             </div>
           )}
 
