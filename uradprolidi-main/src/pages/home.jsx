@@ -74,7 +74,6 @@ export default function Home() {
         }
       };
       reader.readAsArrayBuffer(file);
-    import Tesseract from 'tesseract.js';
   };
 
   const handleCameraCapture = () => {
