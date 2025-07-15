@@ -150,7 +150,15 @@ export default function Home() {
         prompt = `Vysvětli jednotlivé hodnoty v tomto krevním rozboru lidským jazykem. Neuváděj žádné diagnózy ani doporučení. Na konci přidej poznámku: "⚠️ Toto není lékařská rada, pouze srozumitelné vysvětlení hodnot."`;
       }
   
-      const response = await fetch('/api/translate', {
+      const response = await fetch
+
+        console.log({
+          type: isImage ? 'image' : 'text',
+          content: isImage ? extractedText : pdfText || inputText,
+          prompt
+        });
+        
+        ('/api/translate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
