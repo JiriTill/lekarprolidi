@@ -102,52 +102,64 @@ export default function Home() {
     document.body.removeChild(input);
   };
 
-    const handleSubmit = async () => {
-      if (!selectedType) {
-        alert('⚠️ Vyberte, čemu chcete rozumět – lékařskou zprávu nebo rozbor krve.');
-        return;
-      }
-    
-      if (!inputText && !pdfText) {
-        alert('⚠️ Nezadal jsi žádný text ani nenahrál dokument.');
-        return;
-      }
-    
-      setLoading(true);
-      setOutput('');
-    
-      try {
-        const isImage = inputText.startsWith('data:image/');
-    
-        // PROMPTY
-        let prompt = '';
-    
-        if (selectedType === 'zprava') {
-          prompt = `Vysvětli následující lékařskou zprávu lidským jazykem. Zaměř se pouze na to, co lékař píše, bez jakýchkoli doporučení nebo názorů. Na konci přidej poznámku: "⚠️ Toto není lékařská rada, pouze srozumitelný překlad zprávy."`;
-        } else if (selectedType === 'rozbor') {
-          prompt = `Vysvětli jednotlivé hodnoty v tomto krevním rozboru lidským jazykem. Neuváděj žádné diagnózy ani doporučení. Na konci přidej poznámku: "⚠️ Toto není lékařská rada, pouze srozumitelné vysvětlení hodnot."`;
-        }
-    
-        const response = await fetch('/api/translate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            type: isImage ? 'image' : 'text',
-            content: isImage ? inputText : pdfText || inputText,
-            prompt: prompt,
-          }),
+  const handleSubmit = async () => {
+    if (!selectedType) {
+      alert('⚠️ Vyberte, čemu chcete rozumět – lékařskou zprávu nebo rozbor krve.');
+      return;
+    }
+  
+    if (!inputText && !pdfText) {
+      alert('⚠️ Nezadal jsi žádný text ani nenahrál dokument.');
+      return;
+    }
+  
+    setLoading(true);
+    setOutput('');
+  
+    try {
+      const isImage = inputText.startsWith('data:image/');
+      let extractedText = '';
+  
+      if (isImage) {
+        const { data: { text } } = await Tesseract.recognize(inputText, 'ces', {
+          logger: (m) => console.log(m), // Optional: logs progress
         });
-    
-        const data = await response.json();
-        setOutput(data.result || '⚠️ Odpověď je prázdná.');
-      } catch (error) {
-        console.error(error);
-        setOutput('⚠️ Došlo k chybě při komunikaci se serverem.');
-      } finally {
-        setLoading(false);
+  
+        if (text.trim().length < 5) {
+          throw new Error("OCR nerozpoznal žádný čitelný text.");
+        }
+  
+        extractedText = text;
       }
-    };
-
+  
+      // PROMPTY
+      let prompt = '';
+  
+      if (selectedType === 'zprava') {
+        prompt = `Vysvětli následující lékařskou zprávu lidským jazykem. Zaměř se pouze na to, co lékař píše, bez jakýchkoli doporučení nebo názorů. Na konci přidej poznámku: "⚠️ Toto není lékařská rada, pouze srozumitelný překlad zprávy."`;
+      } else if (selectedType === 'rozbor') {
+        prompt = `Vysvětli jednotlivé hodnoty v tomto krevním rozboru lidským jazykem. Neuváděj žádné diagnózy ani doporučení. Na konci přidej poznámku: "⚠️ Toto není lékařská rada, pouze srozumitelné vysvětlení hodnot."`;
+      }
+  
+      const response = await fetch('/api/translate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: isImage ? 'image' : 'text',
+          content: isImage ? extractedText : pdfText || inputText,
+          prompt: prompt,
+        }),
+      });
+  
+      const data = await response.json();
+      setOutput(data.result || '⚠️ Odpověď je prázdná.');
+    } catch (error) {
+      console.error(error);
+      setOutput('⚠️ Došlo k chybě při zpracování. Ujistěte se, že obrázek nebo PDF obsahuje čitelný text.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleClear = () => {
     setInputText('');
