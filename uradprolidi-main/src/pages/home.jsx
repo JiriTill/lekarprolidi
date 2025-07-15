@@ -263,6 +263,11 @@ const handleSubmit = async () => {
           </div>
 
           <div className="flex gap-4 mb-4">
+            
+            {(uploadSuccess || cameraUploadSuccess) && !inputText && !pdfText && (
+              <p className="text-sm text-yellow-700 mb-2 text-center">⏳ Vyčkejte pár vteřin, než tlačítko zmodrá…</p>
+            )}
+
             <button
               className={`flex-1 py-3 rounded-lg text-lg font-semibold transition shadow ${
                 consentChecked && gdprChecked && (inputText || pdfText)
