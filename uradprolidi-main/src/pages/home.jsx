@@ -73,7 +73,8 @@ export default function Home() {
           alert('⚠️ Chyba při čtení PDF. Ujistěte se, že soubor je čitelný.');
         }
       };
-      reader.readAsArrayBuffer(file);
+        reader.readAsArrayBuffer(file);
+    }
   };
 
   const handleCameraCapture = () => {
