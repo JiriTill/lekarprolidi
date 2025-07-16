@@ -4,6 +4,7 @@ import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.entry';
 import FeedbackForm from '../components/FeedbackForm';
 import { Link } from 'react-router-dom';
 import Footer from '../components/Footer';
+import { pdfToImages } from '../utils/pdfToImages';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
