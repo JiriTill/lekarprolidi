@@ -147,31 +147,27 @@ export default function Home() {
     try {
       // Run OCR if it's an image
       if (isImage) {
-        const { createWorker } = Tesseract;
-      
-        const worker = await createWorker('ces', 1, {
-          logger: (m) => console.log(m),
-        });
-      
-        await worker.setParameters({
-          tessedit_char_whitelist: '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZčďěňřšťžáéíóúůČĎĚŇŘŠŤŽÁÉÍÓÚŮ.,:-()@/%+=\n ',
-          preserve_interword_spaces: '1',
-        });
-      
-        const {
-          data: { text },
-        } = await worker.recognize(inputText);
-      
-        await worker.terminate();
-      
-        console.log("OCR Extracted Text:", text);
-      
-        if (text.trim().length < 5) {
-          throw new Error("OCR nerozpoznal žádný čitelný text.");
+          setOutput('⏳ Probíhá rozpoznání textu z obrázku...');
+        
+          const worker = await Tesseract.createWorker({
+            langPath: '/tessdata', // This points to public/tessdata/ces.traineddata
+            logger: (m) => console.log(m),
+          });
+        
+          await worker.loadLanguage('ces');
+          await worker.initialize('ces');
+        
+          const { data: { text } } = await worker.recognize(inputText);
+          await worker.terminate();
+        
+          console.log("OCR Extracted Text:", text);
+        
+          if (text.trim().length < 5) {
+            throw new Error("OCR nerozpoznal žádný čitelný text.");
+          }
+        
+          finalText = text;
         }
-      
-        extractedText = text;
-      }
   
       // Prompt based on selected type
       let prompt = '';
