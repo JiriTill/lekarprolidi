@@ -81,24 +81,20 @@ export default function Home() {
     reader.readAsArrayBuffer(file);
   }
 
-  else if (isImage) {
-    const reader = new FileReader();
-    reader.onload = async () => {
-      try {
-        const { data: { text } } = await Tesseract.recognize(reader.result, 'ces', {
-          logger: (m) => console.log(m),
-        });
-
-        setPdfText(text); // ✅ Not inputText!
-        setUploadSuccess(true);
-      } catch (err) {
-        console.error('OCR chyba:', err);
-        alert('⚠️ Nepodařilo se načíst obrázek. Zkuste jiný soubor.');
-      }
-    };
-    reader.readAsDataURL(file);
-  }
-};
+    else if (isImage) {
+      const reader = new FileReader();
+      reader.onload = async () => {
+        try {
+          const imageBase64 = reader.result;
+          setInputText(imageBase64); // This triggers GPT-4 Vision
+          setUploadSuccess(true);
+        } catch (err) {
+          console.error('Chyba při načítání obrázku:', err);
+          alert('⚠️ Nepodařilo se načíst obrázek. Zkuste jiný soubor.');
+        }
+      };
+      reader.readAsDataURL(file);
+    }
 
   const handleCameraCapture = () => {
     const input = document.createElement('input');
@@ -156,7 +152,7 @@ export default function Home() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              base64Image: finalText,
+              base64Image: finalText.startsWith('data:image/') ? finalText : `data:image/jpeg;base64,${finalText}`,
               prompt: prompt,
             }),
           });
