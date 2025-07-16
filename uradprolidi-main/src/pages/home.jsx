@@ -161,36 +161,20 @@ export default function Home() {
                       🛡️ Tento výstup slouží pouze k orientaci v obsahu lékařské zprávy. Nejedná se o lékařskou radu. Pro přesné informace nebo další postup kontaktujte svého lékaře.
                     "`;
           } else if (selectedType === 'rozbor') {
-            prompt = `🛡️ Tento výstup slouží pouze k lepšímu pochopení výsledků krevního testu a nenahrazuje konzultaci s lékařem.
+            prompt = `Vysvětli následující výsledky krevního rozboru jednoduše a srozumitelně pro běžného člověka bez lékařských znalostí. Nepřidávej žádné diagnózy ani doporučení. Pokud je uvedeno referenční rozmezí, napiš, jestli je hodnota v normě. Použij tuto strukturu:
 
-                      Vysvětli následující výsledky krevního rozboru jednoduše a přehledně. Výstup má být srozumitelný i pro běžného člověka bez lékařského vzdělání.
-                      
-                      🔹 Drž se výhradně uvedených hodnot – **nepřidávej žádné diagnózy ani návrhy léčby**.  
-                      🔹 U každého parametru uveď stručné vysvětlení, co znamená.  
-                      🔹 Pokud je k dispozici referenční rozmezí, použij ho pro orientační určení, zda je hodnota „v normě“, „mírně mimo“ nebo „výrazně mimo normu“.  
-                      🔹 Pokud referenční hodnoty chybí, vycházej ze standardních rozmezí podle pohlaví a věku, pokud jsou tyto údaje uvedeny. Jinak napiš „Není uvedeno“.  
-                      🔹 Pokud je hodnota výrazně mimo běžné rozmezí, napiš neutrální upozornění, že by bylo vhodné konzultovat lékaře.  
-                      🔹 Nepoužívej žádná alarmující slova – zachovej neutrální a klidný tón.
-                      
-                      🧾 Struktura výstupu pro každý parametr:
-                      
-                      **Název parametru:**  
-                      (např. Hemoglobin, Leukocyty – uveď plný název i překlad zkratky, pokud existuje)
-                      
-                      **Naměřená hodnota:**  
-                      (např. 136 g/l; pokud chybí, napiš „Není uvedena“)
-                      
-                      **Co to znamená:**  
-                      (1–2 věty, co daný parametr v těle dělá, proč se měří)
-                      
-                      **Hodnota v normě?:**  
-                      (napiš „v normě“, „mírně mimo normu“ nebo „výrazně mimo normu“; při posledním můžeš dodat „Doporučuje se konzultace s lékařem“)
-                      
-                      📌 Zachovej pořadí parametrů tak, jak jsou ve vstupu, a seskup je logicky, pokud je to vhodné (např. jaterní testy, krevní obraz atd.).
-                      
-                      Na závěr připoj poznámku:
-                      
-                      🛡️ Tento výstup je určen pouze pro informativní účely a nenahrazuje lékařskou konzultaci. V případě nejasností se obraťte na svého lékaře.
+Název parametru:
+Naměřená hodnota:
+Co to znamená:
+Hodnota v normě?:
+
+Na konci připoj: 
+"Tento překlad slouží pouze k pochopení výsledků krevního rozboru a není lékařskou radou. Pro další informace kontaktujte svého lékaře."
+
+Zde jsou výsledky:
+
+[Kopíruj text z PDF výše sem]
+
                       `;
           }
       
