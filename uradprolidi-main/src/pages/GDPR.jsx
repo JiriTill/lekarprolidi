@@ -9,58 +9,65 @@ export default function GDPR() {
         <h1 className="text-3xl font-bold mb-6 text-gray-900">Zásady ochrany osobních údajů (GDPR)</h1>
 
         <p className="mb-4 text-gray-800 leading-relaxed">
-          Aplikace <strong>Úřad pro lidi</strong> je navržena tak, aby respektovala vaše soukromí. Nevyžaduje žádnou registraci a neuchovává žádná osobní data ani nahrané dokumenty.
+          Aplikace <strong>Lékař pro lidi</strong> je navržena s maximálním důrazem na ochranu soukromí. Nepotřebuje žádnou registraci a neshromažďuje ani neukládá žádná data z nahraných zpráv nebo obrázků.
         </p>
 
         <h2 className="text-xl font-semibold mt-6 mb-2 text-gray-900">🔄 Jak probíhá zpracování</h2>
         <p className="mb-4 text-gray-800 leading-relaxed">
-          Vámi zadaný text, nahraný dokument nebo fotka jsou odeslány přes zabezpečené připojení na servery <strong>OpenAI</strong>, kde proběhne přepis nebo překlad do srozumitelného jazyka.
+          Vaše zpráva, rozbor nebo nahraný obrázek je odeslán přes zabezpečené připojení na servery <strong>OpenAI</strong>, kde proběhne analýza a přepis do srozumitelné lidské řeči pomocí umělé inteligence.
         </p>
         <p className="mb-4 text-gray-800 leading-relaxed">
-          Společnost OpenAI, která provozuje tuto umělou inteligenci, je subjektem se sídlem v USA a zavázala se k dodržování přísných bezpečnostních a etických standardů včetně <strong>GDPR kompatibility</strong>. Více o jejich zásadách naleznete zde: <a href="https://openai.com/policies/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">OpenAI Privacy Policy</a>.
+          OpenAI je mezinárodní technologická společnost se sídlem v USA, která se zavázala k dodržování přísných bezpečnostních pravidel a zásad zpracování dat, včetně <strong>GDPR kompatibility</strong>. Více informací naleznete zde: <a href="https://openai.com/policies/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">OpenAI Privacy Policy</a>.
+        </p>
+
+        <h2 className="text-xl font-semibold mt-6 mb-2 text-gray-900">📊 Google Ads a sledování</h2>
+        <p className="mb-4 text-gray-800 leading-relaxed">
+          Na stránce se zobrazují reklamy třetích stran prostřednictvím služby <strong>Google Ads</strong>. Tyto reklamy mohou používat tzv. cookies nebo jiné sledovací technologie za účelem zobrazování relevantního obsahu. S těmito údaji nijak nenakládám a nejsou spojeny s nahrávanými dokumenty.
+        </p>
+        <p className="mb-4 text-gray-800 leading-relaxed">
+          Více o tom, jak Google pracuje s daty, se můžete dočíst zde: <a href="https://policies.google.com/technologies/ads" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Zásady reklamy Google</a>.
         </p>
 
         <h2 className="text-xl font-semibold mt-6 mb-2 text-gray-900">🗂️ Uchovávání dat</h2>
         <p className="mb-4 text-gray-800 leading-relaxed">
-          Úřad pro lidi žádná data <strong>neukládá</strong>, nesleduje uživatele a nepoužívá cookies ani analytické nástroje. Po překladu nejsou soubory ani texty nikde uchovávány — data se okamžitě „zapomenou“.
+          <strong>Lékař pro lidi</strong> žádná data <strong>neukládá</strong>, nepoužívá žádné vlastní cookies, a po překladu nejsou nahrané dokumenty ani výstupy nijak uchovávány. Vše probíhá jednorázově.
         </p>
 
         <h2 className="text-xl font-semibold mt-6 mb-2 text-gray-900">✉️ Zpětná vazba</h2>
         <p className="mb-4 text-gray-800 leading-relaxed">
-          Pokud nám pošlete zpětnou vazbu prostřednictvím formuláře, ukládám ji spolu s informacemi o zařízení a prohlížeči, ze kterého byla odeslána. Tyto informace slouží výhradně k analýze a ke zlepšení aplikace. Nejsou předávány třetím stranám ani využívány k marketingovým účelům.
+          Pokud pošlete zpětnou vazbu prostřednictvím formuláře, může být uložena spolu s informací o zařízení nebo prohlížeči. Tyto informace slouží výhradně pro zlepšování služby a nejsou předávány třetím stranám.
         </p>
 
         <h2 className="text-xl font-semibold mt-6 mb-2 text-gray-900">🛡️ Váš souhlas</h2>
         <p className="mb-4 text-gray-800 leading-relaxed">
-          Použitím této aplikace dáváte souhlas s jednorázovým zpracováním dat výhradně pro účely zjednodušení úředního dokumentu, nebo v případě zpětné vazby pro účely vylepšení služby. Tento souhlas je dobrovolný a nezbytný pro fungování aplikace.
+          Použitím této aplikace dáváte souhlas s jednorázovým zpracováním vašich vstupních dat výhradně pro účely překladu nebo zpětné vazby. Tento souhlas je dobrovolný a nezbytný pro fungování služby.
+        </p>
+
+        <h2 className="text-xl font-semibold mt-6 mb-2 text-gray-900">🚫 Upozornění na citlivé údaje</h2>
+        <p className="mb-4 text-gray-800 leading-relaxed">
+          Ačkoliv aplikace neukládá žádná data, <strong>nedoporučuji nahrávat osobní údaje</strong>, jako je rodné číslo, adresa, telefon nebo celé jméno. Není to nutné pro funkčnost nástroje.
+        </p>
+        <p className="mb-4 text-gray-800 leading-relaxed">
+          Pokud se tyto údaje nacházejí ve zprávě, doporučuji je <strong>před odesláním anonymizovat nebo začernit</strong>.
+        </p>
+        <p className="mb-4 text-gray-800 leading-relaxed">
+          Toto doporučení platí obecně pro jakýkoli nástroj na internetu: <strong>citlivé osobní údaje sdílejte pouze tehdy, pokud je to opravdu nezbytné.</strong>
         </p>
 
         <h2 className="text-xl font-semibold mt-6 mb-2 text-gray-900">📧 Kontakt na správce</h2>
         <p className="mb-4 text-gray-800 leading-relaxed">
-          V případě dotazů ke zpracování údajů mě kontaktujte prostřednictvím formuláře na stránce <a href="/o-projektu" className="text-blue-600 hover:underline">O projektu</a>.
+          V případě dotazů mě můžete kontaktovat prostřednictvím formuláře na stránce <Link to="/o-projektu" className="text-blue-600 hover:underline">O projektu</Link>.
         </p>
 
         <Link
           to="/"
           className="inline-block mt-8 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
         >
-          Zpět k překladu do člověčiny
+          Zpět k překladu do lidské řeči
         </Link>
-
-            <h2 className="text-xl font-semibold mt-6 mb-2 text-gray-900">🚫 Upozornění na citlivé údaje</h2>
-            <p className="mb-4 text-gray-800 leading-relaxed">
-              Ačkoliv aplikace <strong>Úřad pro lidi</strong> neukládá žádná data a neslouží k ověřování totožnosti, <strong>nedoporučuji zadávat osobní údaje</strong>, jako je rodné číslo, datum narození, adresa trvalého bydliště nebo jiné citlivé informace.
-            </p>
-            <p className="mb-4 text-gray-800 leading-relaxed">
-              Tyto údaje aplikace <strong>nepotřebuje, nezpracovává a ani nechce zpracovávat</strong>. Pokud se nacházejí na úředním dokumentu, doporučuji je před nahráním <strong>začernit nebo anonymizovat</strong>.
-            </p>
-            <p className="mb-4 text-gray-800 leading-relaxed">
-              Toto je mé obecné doporučení jako člověka, který se ve veřejné správě dlouhodobě věnuje také bezpečnosti: <strong>osobní údaje nepatří na internet, pokud to není nezbytně nutné.</strong>
-            </p>
-        
       </main>
 
-     <Footer />
+      <Footer />
     </div>
   );
 }
