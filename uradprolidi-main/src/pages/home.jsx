@@ -4,6 +4,7 @@ import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.entry';
 import FeedbackForm from '../components/FeedbackForm';
 import { Link } from 'react-router-dom';
 import Tesseract from 'tesseract.js';
+import { createWorker } from 'tesseract.js';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
@@ -146,16 +147,29 @@ export default function Home() {
     try {
       // Run OCR if it's an image
       if (isImage) {
-        const { data: { text } } = await Tesseract.recognize(inputText, 'ces', {
+        const { createWorker } = Tesseract;
+      
+        const worker = await createWorker('ces', 1, {
           logger: (m) => console.log(m),
         });
-  
+      
+        await worker.setParameters({
+          tessedit_char_whitelist: '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZčďěňřšťžáéíóúůČĎĚŇŘŠŤŽÁÉÍÓÚŮ.,:-()@/%+=\n ',
+          preserve_interword_spaces: '1',
+        });
+      
+        const {
+          data: { text },
+        } = await worker.recognize(inputText);
+      
+        await worker.terminate();
+      
         console.log("OCR Extracted Text:", text);
-  
+      
         if (text.trim().length < 5) {
           throw new Error("OCR nerozpoznal žádný čitelný text.");
         }
-  
+      
         extractedText = text;
       }
   
