@@ -16,7 +16,6 @@ export default function Home() {
   const [gdprChecked, setGdprChecked] = useState(false);
   const [loading, setLoading] = useState(false);
   const [seconds, setSeconds] = useState(0);
-  const [mode, setMode] = useState('report');
   const [selectedType, setSelectedType] = useState(null);
 
   useEffect(() => {
@@ -53,25 +52,9 @@ export default function Home() {
 
         if (fullText.trim().length > 10) {
           setPdfText(fullText);
-        } else {
-          const canvas = document.createElement('canvas');
-          const context = canvas.getContext('2d');
-          const page = await pdf.getPage(1);
-          const viewport = page.getViewport({ scale: 2.0 });
-
-          canvas.width = viewport.width;
-          canvas.height = viewport.height;
-          await page.render({ canvasContext: context, viewport }).promise;
-          const imageData = canvas.toDataURL();
-
-          const { data: { text } } = await Tesseract.recognize(imageData, 'ces', {
-            logger: (m) => console.log(m),
-          });
-
-          setPdfText(text);
         }
-
         setUploadSuccess(true);
+
       } catch (error) {
         console.error("Chyba při zpracování PDF:", error);
         alert('⚠️ Chyba při čtení PDF. Ujistěte se, že soubor je čitelný.');
@@ -121,33 +104,30 @@ export default function Home() {
     document.body.removeChild(input);
   };
 
-     const handleSubmit = async () => {
-      if (!selectedType) {
-        alert('⚠️ Vyberte, čemu chcete rozumět – lékařskou zprávu nebo rozbor krve.');
-        return;
-      }
-    
-      const isImage = inputText.startsWith('data:image/');
-      const finalText = isImage ? inputText : (pdfText || inputText);
-    
-      if (!finalText || (!isImage && finalText.trim().length < 5)) {
-        alert('⚠️ Nezadal jsi žádný text ani nenahrál dokument.');
-        return;
-      }
-    
-      setLoading(true);
-      setOutput('');
-    
-      try {
-        let prompt = '';
-        if (selectedType === 'zprava') {
-          prompt = `Vysvětli následující lékařskou zprávu lidským jazykem. Zaměř se pouze na to, co lékař píše, bez doporučení. Na konci přidej poznámku: "⚠️ Toto není lékařská rada, pouze srozumitelný překlad zprávy."`;
-        } else if (selectedType === 'rozbor') {
-          prompt = `Vysvětli jednotlivé hodnoty v tomto krevním rozboru lidským jazykem. Neuváděj diagnózy. Na konci přidej poznámku: "⚠️ Toto není lékařská rada, pouze srozumitelné vysvětlení hodnot."`;
+    const handleSubmit = async () => {
+        if (!selectedType) {
+          alert('⚠️ Vyberte, čemu chcete rozumět – lékařskou zprávu nebo rozbor krve.');
+          return;
         }
-    
-        if (isImage) {
-          // USE GPT-4 VISION
+      
+        const finalText = inputText || pdfText;
+      
+        if (!finalText || finalText.trim().length < 5) {
+          alert('⚠️ Nezadal jsi žádný text ani nenahrál dokument.');
+          return;
+        }
+      
+        setLoading(true);
+        setOutput('');
+      
+        try {
+          let prompt = '';
+          if (selectedType === 'zprava') {
+            prompt = `Vysvětli následující lékařskou zprávu lidským jazykem. Zaměř se pouze na to, co lékař píše, bez doporučení. Na konci přidej poznámku: "⚠️ Toto není lékařská rada, pouze srozumitelný překlad zprávy."`;
+          } else if (selectedType === 'rozbor') {
+            prompt = `Vysvětli jednotlivé hodnoty v tomto krevním rozboru lidským jazykem. Neuváděj diagnózy. Na konci přidej poznámku: "⚠️ Toto není lékařská rada, pouze srozumitelné vysvětlení hodnot."`;
+          }
+      
           const response = await fetch('/api/translateVision', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -156,31 +136,16 @@ export default function Home() {
               prompt: prompt,
             }),
           });
-    
+      
           const data = await response.json();
           setOutput(data.result || '⚠️ Odpověď je prázdná.');
-        } else {
-          // USE OCR + GPT-3.5
-          const response = await fetch('/api/translate', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              type: 'text',
-              content: finalText,
-              prompt: prompt,
-            }),
-          });
-    
-          const data = await response.json();
-          setOutput(data.result || '⚠️ Odpověď je prázdná.');
+        } catch (error) {
+          console.error(error);
+          setOutput('⚠️ Došlo k chybě při zpracování. Ujistěte se, že dokument je čitelný.');
+        } finally {
+          setLoading(false);
         }
-      } catch (error) {
-        console.error(error);
-        setOutput('⚠️ Došlo k chybě při zpracování. Ujistěte se, že dokument je čitelný.');
-      } finally {
-        setLoading(false);
-      }
-    };
+      };
 
   const handleClear = () => {
     setInputText('');
