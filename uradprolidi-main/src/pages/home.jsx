@@ -17,6 +17,8 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [seconds, setSeconds] = useState(0);
   const [selectedType, setSelectedType] = useState(null);
+  const isImageInput = Array.isArray(inputText) || inputText.startsWith('data:image/');
+  const finalInput = isImageInput ? inputText : (pdfText || inputText);
 
   useEffect(() => {
     let timer;
@@ -125,9 +127,9 @@ export default function Home() {
           return;
         }
       
-        const finalText = inputText || pdfText;
+        const finalInput = isImageInput ? inputText : (pdfText || inputText);
       
-        if (!finalText || finalText.trim().length < 5) {
+         if (!finalInput || (typeof finalInput === 'string' && finalInput.trim().length < 5)) {
           alert('⚠️ Nezadal jsi žádný text ani nenahrál dokument.');
           return;
         }
@@ -204,12 +206,13 @@ export default function Home() {
                       `;
           }
       
-          const response = await fetch('/api/translateVision', {
+          const response = await fetch('/api/translateGpt4o', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              imageUrl: finalText,
-              prompt: prompt,
+              imageUrls: Array.isArray(finalInput) ? finalInput : isImageInput ? [finalInput] : undefined,
+              text: !isImageInput ? finalInput : undefined,
+              prompt,
             }),
           });
 
