@@ -6,9 +6,6 @@ import Footer from '../components/Footer';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`;
 
-
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
-
 export default function Home() {
   const [inputText, setInputText] = useState('');
   const [output, setOutput] = useState('');
