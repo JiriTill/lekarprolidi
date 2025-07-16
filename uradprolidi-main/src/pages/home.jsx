@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import * as pdfjsLib from 'pdfjs-dist/build/pdf';
-import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.entry';
 import FeedbackForm from '../components/FeedbackForm';
 import { Link } from 'react-router-dom';
 import Footer from '../components/Footer';
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`;
+
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
