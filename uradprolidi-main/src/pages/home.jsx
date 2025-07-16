@@ -95,6 +95,7 @@ export default function Home() {
       };
       reader.readAsDataURL(file);
     }
+   };
 
   const handleCameraCapture = () => {
     const input = document.createElement('input');
