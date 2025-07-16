@@ -124,9 +124,64 @@ export default function Home() {
         try {
           let prompt = '';
           if (selectedType === 'zprava') {
-            prompt = `Vysvětli následující lékařskou zprávu lidským jazykem. Zaměř se pouze na to, co lékař píše, bez doporučení. Na konci přidej poznámku: "⚠️ Toto není lékařská rada, pouze srozumitelný překlad zprávy."`;
+            prompt = `Přelož následující lékařskou zprávu nebo zdravotní dokument (např. krevní testy, výpis z hospitalizace, zprávu z vyšetření) do srozumitelné češtiny, která je vhodná pro laiky bez lékařských znalostí.
+
+                      Soustřeď se výhradně na obsah zprávy – nepřidávej žádné diagnózy, doporučení ani interpretace, které nejsou explicitně uvedeny. Pokud jsou ve zprávě latinské termíny nebo zkratky, přelož je do srozumitelné podoby a přidej stručné vysvětlení těchto termínů.
+                      
+                      Pokud některé informace (např. oddělení, věk pacienta, typ vyšetření) nejsou ve zprávě uvedeny, napiš „Není uvedeno“ nebo „Informace chybí“.
+                      
+                      Pokud zpráva obsahuje naléhavé nebo závažné nálezy (např. „těžká abnormalita“), vyznač je v závěru a připoj upozornění, že je třeba konzultovat lékaře.
+                      
+                      Na výstupu použij následující přehlednou strukturu:
+                      🏥 Oddělení / specializace:  
+                      (např. neurologie, urologie, ORL; pokud není uvedeno, napiš „Není uvedeno“)
+                      👤 Kdo je pacient:  
+                      (věk, pohlaví, důvod návštěvy – pokud jsou uvedeny, jinak „Informace chybí“)
+                      📄 Co se zjistilo:  
+                      (stručný popis zdravotního stavu nebo hlavních nálezů uvedených ve zprávě, v jednoduchém jazyce)
+                      🧪 Jaká vyšetření proběhla:  
+                      (např. krevní testy, moč, CT, RTG – pokud jsou zmíněny, jinak „Není uvedeno“)
+                      📋 Shrnutí lékařského nálezu:  
+                      (popsané nálezy převedené do srozumitelného jazyka, bez přidávání nových informací)
+                      🧠 Vysvětlení klíčových termínů:  
+                      (stručný seznam lékařských termínů nebo zkratek z textu a jejich vysvětlení, např. „CRP – zánětlivý ukazatel v krvi“)
+                      ⚠️ Závěrem:  
+                      (pokud je ve zprávě uveden závěr nebo doporučení, shrň je věcně; pokud nejsou, napiš „Závěr není uveden“; při závažných nálezech přidej upozornění na konzultaci s lékařem)
+                      
+                      Na konec připoj tuto poznámku:
+                      
+                      "⚠️ Tento překlad slouží pouze k lepšímu pochopení lékařské zprávy a není lékařskou radou. V případě nejasností nebo dotazů se obraťte na svého lékaře."
+                      
+                      Odpověď napiš v češtině.
+                      "`;
           } else if (selectedType === 'rozbor') {
-            prompt = `Vysvětli jednotlivé hodnoty v tomto krevním rozboru lidským jazykem. Neuváděj diagnózy. Na konci přidej poznámku: "⚠️ Toto není lékařská rada, pouze srozumitelné vysvětlení hodnot."`;
+            prompt = `Vysvětli následující výsledky krevního rozboru jednoduše a srozumitelně pro běžného člověka bez lékařských znalostí. Používej jasný, stručný a lidský jazyk.
+
+                      Nepřidávej žádné diagnózy, návrhy léčby ani odhady stavu, které nejsou explicitně uvedeny ve výsledcích. Pokud jsou ve zprávě zkratky nebo odborné termíny (např. ALT, CRP), přelož je do češtiny a stručně vysvětli, co znamenají.
+                      
+                      Pokud jsou uvedena referenční rozmezí, použij je k určení, zda je hodnota v normě. Pokud chybí, vycházej ze standardních lékařských hodnot podle věku a pohlaví pacienta (pokud jsou známy). Pokud údaje (např. hodnota, referenční rozmezí, věk) nejsou uvedeny nebo nejsou jasné, napiš „Informace chybí“ nebo „Není jasné“.
+                      
+                      Pokud je některá hodnota výrazně mimo normu, připoj neutrální upozornění, že je vhodné konzultovat výsledek s lékařem.
+                      
+                      Zachovej pořadí parametrů tak, jak jsou ve zprávě. Pokud je to vhodné, seskup související testy (např. jaterní testy, krevní obraz).
+                      
+                      Pro každý parametr použij tuto strukturu:
+                      ---
+                      🧪 **Název parametru**  
+                      (např. Hemoglobin, Leukocyty – uveď plný název a překlad zkratky, pokud existuje)
+                      📊 **Naměřená hodnota**  
+                      (např. 136 g/l; pokud chybí, napiš „Není uvedena“)
+                      🧬 **Co to znamená**  
+                      (stručně vysvětli funkci nebo význam parametru v těle – 1 až 2 věty)
+                      📈 **Hodnota v normě?**  
+                      (napiš „v normě“, „mírně mimo normu“ nebo „výrazně mimo normu“; pokud je výrazně mimo normu, přidej: „Doporučuje se konzultace s lékařem“)
+                      ---
+                      Na konec připoj tuto poznámku:
+                      
+                      "⚠️ Tento překlad slouží pouze k pochopení výsledků krevního rozboru a není lékařskou radou. Pro další informace nebo vysvětlení kontaktujte svého lékaře."
+                      
+                      Odpověď napiš v češtině.
+                      `;
           }
       
           const response = await fetch('/api/translateVision', {
