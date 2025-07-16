@@ -132,11 +132,11 @@ export default function Home() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              base64Image: finalText,
+              imageUrl: finalText,
               prompt: prompt,
             }),
           });
-      
+
           const data = await response.json();
           setOutput(data.result || '⚠️ Odpověď je prázdná.');
         } catch (error) {
