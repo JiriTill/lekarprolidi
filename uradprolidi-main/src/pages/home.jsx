@@ -152,7 +152,7 @@ export default function Home() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              base64Image: finalText.startsWith('data:image/') ? finalText : `data:image/jpeg;base64,${finalText}`,
+              base64Image: finalText,
               prompt: prompt,
             }),
           });
