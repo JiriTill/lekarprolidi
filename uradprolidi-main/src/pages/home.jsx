@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import * as pdfjsLib from 'pdfjs-dist/build/pdf';
-import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.entry';
 import FeedbackForm from '../components/FeedbackForm';
 import { Link } from 'react-router-dom';
 import Footer from '../components/Footer';
-import { pdfToImages } from '../utils/pdfToImages';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
@@ -53,9 +51,24 @@ export default function Home() {
         }
 
         if (fullText.trim().length > 10) {
+          // Readable PDF → send as text
           setPdfText(fullText);
+          setUploadSuccess(true);
+        } else {
+          // Image-based PDF → convert to images
+          try {
+            const images = await pdfToImages(file);
+            if (images.length > 0) {
+              setInputText(images); // Array of base64 images
+              setUploadSuccess(true);
+            } else {
+              alert('⚠️ PDF nelze přečíst ani převést na obrázek.');
+            }
+          } catch (err) {
+            console.error('Chyba při převodu PDF na obrázky:', err);
+            alert('⚠️ Chyba při zpracování PDF.');
+          }
         }
-        setUploadSuccess(true);
 
       } catch (error) {
         console.error("Chyba při zpracování PDF:", error);
