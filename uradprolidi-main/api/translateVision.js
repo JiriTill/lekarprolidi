@@ -15,6 +15,11 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Missing image or prompt.' });
   }
 
+    console.log("📤 Sending to GPT Vision:");
+    console.log("Prompt:", prompt);
+    console.log("Base64 length:", base64Image.length);
+    console.log("Base64 header sample:", base64Image.substring(0, 30));
+
   try {
     const response = await openai.chat.completions.create({
       model: 'gpt-4-vision-preview',
@@ -29,6 +34,8 @@ export default async function handler(req, res) {
       ],
       max_tokens: 1000,
     });
+
+    console.log("📥 GPT Vision raw response:", JSON.stringify(response, null, 2));
 
     const result = response.choices?.[0]?.message?.content;
     res.status(200).json({ result });
