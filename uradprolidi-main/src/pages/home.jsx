@@ -145,29 +145,38 @@ export default function Home() {
   
     try {
       // Run OCR if it's an image
-      if (isImage) {
-          setOutput('⏳ Probíhá rozpoznání textu z obrázku...');
-        
-          const worker = await Tesseract.createWorker({
-            langPath: '/tessdata', // This points to public/tessdata/ces.traineddata
-            logger: (m) => console.log(m),
-          });
-        
-          await worker.loadLanguage('ces');
-          await worker.initialize('ces');
-        
-          const { data: { text } } = await worker.recognize(inputText);
-          await worker.terminate();
-        
-          console.log("OCR Extracted Text:", text);
-        
-          if (text.trim().length < 5) {
-            throw new Error("OCR nerozpoznal žádný čitelný text.");
+      let extractedText = '';
+
+          if (isImage) {
+            setOutput('⏳ Probíhá rozpoznání textu z obrázku...');
+          
+            try {
+              const worker = await Tesseract.createWorker({
+                langPath: '/tessdata', // points to /public/tessdata/ces.traineddata
+                logger: (m) => console.log(m),
+              });
+          
+              await worker.loadLanguage('ces');
+              await worker.initialize('ces');
+          
+              const { data: { text } } = await worker.recognize(inputText);
+              await worker.terminate();
+          
+              console.log("OCR RESULT TEXT:", text);
+              extractedText = text.trim();
+          
+              if (extractedText.length < 5) {
+                throw new Error("OCR nerozpoznal žádný čitelný text.");
+              }
+          
+            } catch (ocrError) {
+              console.error("❌ OCR Error:", ocrError);
+              setOutput("⚠️ Nepodařilo se přečíst text z obrázku. Zkuste prosím jinou fotku nebo lepší světlo.");
+              setLoading(false);
+              return;
+            }
           }
-        
-          finalText = text;
-        }
-  
+
       // Prompt based on selected type
       let prompt = '';
       if (selectedType === 'zprava') {
@@ -181,7 +190,7 @@ export default function Home() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          type: isImage ? 'image' : 'text',
+          type: isImage ? 'text' : 'text',
           content: isImage ? extractedText : finalText,
           prompt,
         }),
