@@ -125,86 +125,66 @@ export default function Home() {
     document.body.removeChild(input);
   };
 
-  const handleSubmit = async () => {
-    if (!selectedType) {
-      alert('⚠️ Vyberte, čemu chcete rozumět – lékařskou zprávu nebo rozbor krve.');
-      return;
-    }
-  
-    const isImage = inputText.startsWith('data:image/');
-    let extractedText = ''; // we'll fill this if it's an image
-    const finalText = isImage ? null : (pdfText || inputText);
-  
-    if (!inputText && !pdfText) {
-      alert('⚠️ Nezadal jsi žádný text ani nenahrál dokument.');
-      return;
-    }
-  
-    setLoading(true);
-    setOutput('');
-  
-    try {
-      // Run OCR if it's an image
-      let extractedText = '';
-
-          if (isImage) {
-            setOutput('⏳ Probíhá rozpoznání textu z obrázku...');
-          
-            try {
-              const worker = await Tesseract.createWorker({
-                langPath: '/tessdata', // points to /public/tessdata/ces.traineddata
-                logger: (m) => console.log(m),
-              });
-          
-              await worker.loadLanguage('ces');
-              await worker.initialize('ces');
-          
-              const { data: { text } } = await worker.recognize(inputText);
-              await worker.terminate();
-          
-              console.log("OCR RESULT TEXT:", text);
-              extractedText = text.trim();
-          
-              if (extractedText.length < 5) {
-                throw new Error("OCR nerozpoznal žádný čitelný text.");
-              }
-          
-            } catch (ocrError) {
-              console.error("❌ OCR Error:", ocrError);
-              setOutput("⚠️ Nepodařilo se přečíst text z obrázku. Zkuste prosím jinou fotku nebo lepší světlo.");
-              setLoading(false);
-              return;
-            }
-          }
-
-      // Prompt based on selected type
-      let prompt = '';
-      if (selectedType === 'zprava') {
-        prompt = `Vysvětli následující lékařskou zprávu lidským jazykem. Zaměř se pouze na to, co lékař píše, bez jakýchkoli doporučení nebo názorů. Na konci přidej poznámku: "⚠️ Toto není lékařská rada, pouze srozumitelný překlad zprávy."`;
-      } else if (selectedType === 'rozbor') {
-        prompt = `Vysvětli jednotlivé hodnoty v tomto krevním rozboru lidským jazykem. Neuváděj žádné diagnózy ani doporučení. Na konci přidej poznámku: "⚠️ Toto není lékařská rada, pouze srozumitelné vysvětlení hodnot."`;
+    const handleSubmit = async () => {
+      if (!selectedType) {
+        alert('⚠️ Vyberte, čemu chcete rozumět – lékařskou zprávu nebo rozbor krve.');
+        return;
       }
-  
-      // Now send the right content (OCR text if image, otherwise plain or PDF text)
-      const response = await fetch('/api/translate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: isImage ? 'text' : 'text',
-          content: isImage ? extractedText : finalText,
-          prompt,
-        }),
-      });
-  
-      const data = await response.json();
-      setOutput(data.result || '⚠️ Odpověď je prázdná.');
-    } catch (error) {
-      console.error(error);
-      setOutput('⚠️ Došlo k chybě při zpracování. Ujistěte se, že obrázek nebo PDF obsahuje čitelný text.');
-    } finally {
-      setLoading(false);
-    }
-  };
+    
+      const isImage = inputText.startsWith('data:image/');
+      const finalText = isImage ? inputText : (pdfText || inputText);
+    
+      if (!finalText || (!isImage && finalText.trim().length < 5)) {
+        alert('⚠️ Nezadal jsi žádný text ani nenahrál dokument.');
+        return;
+      }
+    
+      setLoading(true);
+      setOutput('');
+    
+      try {
+        // Choose the prompt based on selected type
+        let prompt = '';
+        if (selectedType === 'zprava') {
+          prompt = `Vysvětli následující lékařskou zprávu lidským jazykem. Zaměř se pouze na to, co lékař píše, bez jakýchkoli doporučení nebo názorů. Na konci přidej poznámku: "⚠️ Toto není lékařská rada, pouze srozumitelný překlad zprávy."`;
+        } else if (selectedType === 'rozbor') {
+          prompt = `Vysvětli jednotlivé hodnoty v tomto krevním rozboru lidským jazykem. Neuváděj žádné diagnózy ani doporučení. Na konci přidej poznámku: "⚠️ Toto není lékařská rada, pouze srozumitelné vysvětlení hodnot."`;
+        }
+    
+        let response, data;
+    
+        if (isImage) {
+          // GPT-4 Vision call
+          response = await fetch('/api/translateVision', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              base64Image: finalText,
+              prompt,
+            }),
+          });
+        } else {
+          // Normal text or OCR output
+          response = await fetch('/api/translate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'text',
+              content: finalText,
+              prompt,
+            }),
+          });
+        }
+    
+        data = await response.json();
+        setOutput(data.result || '⚠️ Odpověď je prázdná.');
+      } catch (error) {
+        console.error(error);
+        setOutput('⚠️ Došlo k chybě při zpracování. Ujistěte se, že obrázek nebo PDF obsahuje čitelný text.');
+      } finally {
+        setLoading(false);
+      }
+    };
 
   const handleClear = () => {
     setInputText('');
