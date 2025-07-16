@@ -3,6 +3,7 @@ import * as pdfjsLib from 'pdfjs-dist/build/pdf';
 import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.entry';
 import FeedbackForm from '../components/FeedbackForm';
 import { Link } from 'react-router-dom';
+import Footer from '../components/Footer';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
@@ -283,15 +284,7 @@ export default function Home() {
         </div>
       </main>
 
-      <footer className="text-center text-sm text-gray-500 py-4">
-        <div className="space-x-4">
-          <a href="/o-projektu" className="hover:underline">O projektu</a>
-          <a href="/jak-to-funguje" className="hover:underline">Jak to funguje</a>
-          <a href="/gdpr" className="hover:underline">Zpracování dat</a>
-          <Link to="https://uradprolidi.vercel.app" className="hover:underline" target="_blank">Úřad pro lidi</Link>
-        </div>
-        <p className="mt-2">&copy; {new Date().getFullYear()} Lékař pro lidi</p>
-      </footer>
+     <Footer />
     </div>
   );
 }
