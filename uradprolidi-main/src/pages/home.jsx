@@ -42,7 +42,7 @@ export default function Home() {
     const reader = new FileReader();
     reader.onload = async () => {
       try {
-        const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(reader.result) });
+        const loadingTask = pdfjsLib.getDocument({ data: reader.result });
         const pdf = await loadingTask.promise;
         let fullText = '';
 
