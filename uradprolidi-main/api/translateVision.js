@@ -44,3 +44,11 @@ export default async function handler(req, res) {
     res.status(500).json({ error: 'GPT Vision processing failed.' });
   }
 }
+
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '8mb',
+    },
+  },
+};
