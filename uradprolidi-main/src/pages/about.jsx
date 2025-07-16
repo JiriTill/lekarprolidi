@@ -22,8 +22,8 @@ export default function About() {
 
         <div className="flex justify-center my-6">
           <img
-            src="/urednik.png"
-            alt="Autor projektu"
+            src="/lekar.png"
+            alt="Lékař pro lidi"
             className="max-w-full md:max-w-md rounded-lg shadow"
           />
         </div>
