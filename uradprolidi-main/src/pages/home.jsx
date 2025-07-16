@@ -125,7 +125,7 @@ export default function Home() {
     document.body.removeChild(input);
   };
 
-    const handleSubmit = async () => {
+     const handleSubmit = async () => {
       if (!selectedType) {
         alert('⚠️ Vyberte, čemu chcete rozumět – lékařskou zprávu nebo rozbor krve.');
         return;
@@ -143,44 +143,44 @@ export default function Home() {
       setOutput('');
     
       try {
-        // Choose the prompt based on selected type
         let prompt = '';
         if (selectedType === 'zprava') {
-          prompt = `Vysvětli následující lékařskou zprávu lidským jazykem. Zaměř se pouze na to, co lékař píše, bez jakýchkoli doporučení nebo názorů. Na konci přidej poznámku: "⚠️ Toto není lékařská rada, pouze srozumitelný překlad zprávy."`;
+          prompt = `Vysvětli následující lékařskou zprávu lidským jazykem. Zaměř se pouze na to, co lékař píše, bez doporučení. Na konci přidej poznámku: "⚠️ Toto není lékařská rada, pouze srozumitelný překlad zprávy."`;
         } else if (selectedType === 'rozbor') {
-          prompt = `Vysvětli jednotlivé hodnoty v tomto krevním rozboru lidským jazykem. Neuváděj žádné diagnózy ani doporučení. Na konci přidej poznámku: "⚠️ Toto není lékařská rada, pouze srozumitelné vysvětlení hodnot."`;
+          prompt = `Vysvětli jednotlivé hodnoty v tomto krevním rozboru lidským jazykem. Neuváděj diagnózy. Na konci přidej poznámku: "⚠️ Toto není lékařská rada, pouze srozumitelné vysvětlení hodnot."`;
         }
     
-        let response, data;
-    
         if (isImage) {
-          // GPT-4 Vision call
-          response = await fetch('/api/translateVision', {
+          // USE GPT-4 VISION
+          const response = await fetch('/api/translateVision', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               base64Image: finalText,
-              prompt,
+              prompt: prompt,
             }),
           });
+    
+          const data = await response.json();
+          setOutput(data.result || '⚠️ Odpověď je prázdná.');
         } else {
-          // Normal text or OCR output
-          response = await fetch('/api/translate', {
+          // USE OCR + GPT-3.5
+          const response = await fetch('/api/translate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               type: 'text',
               content: finalText,
-              prompt,
+              prompt: prompt,
             }),
           });
-        }
     
-        data = await response.json();
-        setOutput(data.result || '⚠️ Odpověď je prázdná.');
+          const data = await response.json();
+          setOutput(data.result || '⚠️ Odpověď je prázdná.');
+        }
       } catch (error) {
         console.error(error);
-        setOutput('⚠️ Došlo k chybě při zpracování. Ujistěte se, že obrázek nebo PDF obsahuje čitelný text.');
+        setOutput('⚠️ Došlo k chybě při zpracování. Ujistěte se, že dokument je čitelný.');
       } finally {
         setLoading(false);
       }
