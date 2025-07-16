@@ -8,54 +8,61 @@ export default function HowItWorks() {
         <h1 className="text-3xl font-bold mb-6 text-gray-900">Jak to funguje</h1>
 
         <p className="mb-4 text-gray-800 leading-relaxed">
-          <strong>Lékař pro lidi</strong> je nástroj, který pomocí umělé inteligence překládá složité lékařské zprávy a krevní rozbory do srozumitelné lidské řeči.
+          <strong>Lékař pro lidi</strong> je jednoduchý nástroj, který pomocí umělé inteligence přeloží lékařské zprávy a krevní rozbory do srozumitelné řeči – tak, aby jim rozuměl opravdu každý.
         </p>
 
-        <h2 className="text-xl font-semibold mt-6 mb-2 text-gray-900">📥 1. Vložte nebo nahrajte dokument</h2>
+        <h2 className="text-xl font-semibold mt-6 mb-2 text-gray-900">📥 1. Nahrajte dokument nebo vložte text</h2>
         <p className="mb-4 text-gray-800 leading-relaxed">
           Můžete:
         </p>
         <ul className="list-disc list-inside mb-4 text-gray-800">
-          <li>vložit text ručně,</li>
+          <li>vložit text lékařské zprávy ručně,</li>
           <li>nahrát PDF soubor,</li>
-          <li>nahrát fotku nebo použít fotoaparát v mobilu.</li>
+          <li>přiložit fotku nebo sken zprávy,</li>
+          <li>vyfotit dokument přímo z mobilu.</li>
         </ul>
         <p className="mb-4 text-gray-800 leading-relaxed">
-          Díky GPT-4o nástroj rozumí i obrázkům a skenům – žádné převody ani OCR nejsou potřeba.
+          Nástroj si poradí i s fotkami nebo skeny – vše se automaticky převede na čitelný text pomocí nejnovější technologie.
         </p>
 
         <h2 className="text-xl font-semibold mt-6 mb-2 text-gray-900">🛡️ 2. Potvrďte souhlas</h2>
         <p className="mb-4 text-gray-800 leading-relaxed">
-          Před překladem je potřeba:
+          Než zahájíte překlad, požádáme vás o dvě jednoduchá potvrzení:
         </p>
         <ul className="list-disc list-inside mb-4 text-gray-800">
-          <li>potvrdit, že výstup není lékařská rada,</li>
-          <li>souhlasit se zpracováním dat během překladu.</li>
+          <li>souhlas s tím, že výstup není lékařská rada,</li>
+          <li>souhlas se zpracováním dat během překladu.</li>
         </ul>
         <p className="mb-4 text-gray-800 leading-relaxed">
-          Data se nikam neukládají a po překladu jsou zapomenuta.
+          Bez těchto souhlasů překlad neproběhne – je to základní ochrana vás i provozovatele.
         </p>
 
         <h2 className="text-xl font-semibold mt-6 mb-2 text-gray-900">⚙️ 3. Klikněte na „Přelož do lidské řeči“</h2>
         <p className="mb-4 text-gray-800 leading-relaxed">
-          Umělá inteligence přečte text nebo obrázek a během pár vteřin připraví jasné a srozumitelné vysvětlení.
+          Po kliknutí se váš text nebo dokument odešle k umělé inteligenci, která během několika sekund vytvoří srozumitelný výklad bez odborných pojmů.
         </p>
 
-        <h2 className="text-xl font-semibold mt-6 mb-2 text-gray-900">📄 4. Výstup: jasný a lidský</h2>
+        <h2 className="text-xl font-semibold mt-6 mb-2 text-gray-900">📄 4. Výstup: přehledně a lidsky</h2>
         <p className="mb-4 text-gray-800 leading-relaxed">
-          Dostanete přehledný výstup, kterému porozumí každý – bez latiny a složitých zkratek.
+          Výstupem je přehledný a jednoduchý výklad: <em>co je napsáno, co se po vás chce, kdy to případně udělat a proč.</em> Nic víc, nic míň – bez diagnóz a bez doporučení.
         </p>
 
         <h2 className="text-xl font-semibold mt-6 mb-2 text-gray-900">🔒 Soukromí a bezpečnost</h2>
         <p className="mb-4 text-gray-800 leading-relaxed">
-          Žádné trackery, žádné reklamy, žádné ukládání dat. Váš dokument je pouze váš – a hned po překladu mizí.
+          Vaše dokumenty se <strong>neukládají</strong>. Nepoužíváme žádné trackery, cookies ani reklamy. Výstup se zobrazí pouze vám a po dokončení se nikde neuchovává.
+        </p>
+        <p className="mb-4 text-gray-800 leading-relaxed">
+          Obsah dokumentu je automaticky odesílán k překladu do služby OpenAI, kde dojde ke zpracování pomocí umělé inteligence. Žádný člověk obsah nečte, vše probíhá strojově.
+        </p>
+        <p className="mb-4 text-gray-800 leading-relaxed">
+          Přesto doporučuji – nejen zde, ale obecně na internetu – <strong>nikdy neposílejte osobní údaje</strong> jako rodné číslo, datum narození, adresu nebo jiné citlivé informace, pokud to není nezbytně nutné. Je to základní pravidlo digitální bezpečnosti.
         </p>
 
         <Link
           to="/"
           className="inline-block mt-8 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
         >
-          Zpět k překladu
+          Zpět k překladu do lidské řeči
         </Link>
       </main>
 
@@ -70,4 +77,3 @@ export default function HowItWorks() {
     </div>
   );
 }
-
