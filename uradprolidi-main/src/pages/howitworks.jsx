@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import Footer from '../components/Footer';
 
 export default function HowItWorks() {
   return (
@@ -66,14 +67,7 @@ export default function HowItWorks() {
         </Link>
       </main>
 
-      <footer className="text-center text-sm text-gray-500 py-6 border-t mt-8">
-        <div className="space-x-4">
-          <Link to="/o-projektu" className="hover:underline">O projektu</Link>
-          <Link to="/jak-to-funguje" className="hover:underline">Jak to funguje</Link>
-          <Link to="/gdpr" className="hover:underline">Zpracování dat</Link>
-        </div>
-        <p className="mt-2">&copy; {new Date().getFullYear()} Lékař pro lidi</p>
-      </footer>
+      <Footer />
     </div>
   );
 }
