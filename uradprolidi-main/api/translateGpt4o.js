@@ -17,10 +17,12 @@ export default async function handler(req, res) {
       messages.push({
         role: 'user',
         content: [
-          ...imageUrls.map((url) => ({
-            type: 'image_url',
-            image_url: { url }
-          })),
+        ...imageUrls.map((base64) => ({
+          type: 'image_url',
+          image_url: {
+            url: base64,  // base64 must already be like "data:image/png;base64,..."
+          },
+        })),
           {
             type: 'text',
             text: prompt
