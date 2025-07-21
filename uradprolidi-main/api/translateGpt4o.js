@@ -13,27 +13,25 @@ export default async function handler(req, res) {
     const messages = [];
 
     if (Array.isArray(imageUrls)) {
-      // Multi-modal input (images + prompt)
       messages.push({
         role: 'user',
         content: [
-        ...imageUrls.map((base64) => ({
-          type: 'image_url',
-          image_url: {
-            url: base64,  // base64 must already be like "data:image/png;base64,..."
-          },
-        })),
+          ...imageUrls.map((base64) => ({
+            type: 'image_url',
+            image_url: {
+              url: base64, // base64 Data URI already
+            },
+          })),
           {
             type: 'text',
-            text: prompt
-          }
-        ]
+            text: prompt,
+          },
+        ],
       });
     } else if (text) {
-      // Text-only input
       messages.push({
         role: 'user',
-        content: `${prompt}\n\n${text}`
+        content: `${prompt}\n\n${text}`,
       });
     }
 
@@ -44,3 +42,22 @@ export default async function handler(req, res) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
+        model: 'gpt-4o',
+        messages,
+        temperature: 0.3,
+      }),
+    });
+
+    if (!response.ok) {
+      const err = await response.text();
+      return res.status(500).json({ error: `OpenAI error: ${err}` });
+    }
+
+    const data = await response.json();
+    const result = data.choices?.[0]?.message?.content || '';
+    res.status(200).json({ result });
+  } catch (error) {
+    console.error('Error communicating with OpenAI:', error);
+    res.status(500).json({ error: 'Server error while contacting OpenAI.' });
+  }
+}
