@@ -17,7 +17,8 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [seconds, setSeconds] = useState(0);
   const [selectedType, setSelectedType] = useState(null);
-  const isImageInput = Array.isArray(inputText) || inputText.startsWith('data:image/');
+  const isImageInput =
+  typeof inputText === 'string' && inputText.startsWith('data:image/');
   const finalInput = isImageInput ? inputText : (pdfText || inputText);
 
   useEffect(() => {
