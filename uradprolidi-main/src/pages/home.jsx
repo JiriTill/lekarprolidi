@@ -121,6 +121,15 @@ export default function Home() {
     document.body.removeChild(input);
   };
 
+  const convertFileToBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = (error) => reject(error);
+    });
+  };
+
     const handleSubmit = async () => {
         if (!selectedType) {
           alert('⚠️ Vyberte, čemu chcete rozumět – lékařskou zprávu nebo rozbor krve.');
@@ -210,7 +219,11 @@ export default function Home() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              imageUrls: Array.isArray(finalInput) ? finalInput : isImageInput ? [finalInput] : undefined,
+              imageUrls: isImageInput
+                ? [await convertFileToBase64(finalInput)]
+                : Array.isArray(finalInput)
+                  ? finalInput
+                  : undefined,
               text: !isImageInput ? finalInput : undefined,
               prompt,
             }),
