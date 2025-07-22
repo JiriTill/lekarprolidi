@@ -271,17 +271,19 @@ export default function Home() {
       }
     };
 
-  const handleClear = () => {
-    setInputText('');
-    setOutput('');
-    setPdfText('');
-    setUploadSuccess(false);
-    setCameraUploadSuccess(false);
-    setConsentChecked(false);
-    setGdprChecked(false);
-    setLoading(false);
-    setSeconds(0);
-  };
+      const handleClear = () => {
+        setInputText('');
+        setOutput('');
+        setPdfText('');
+        setOcrText('');
+        setUploadSuccess(false);
+        setCameraUploadSuccess(false);
+        setConsentChecked(false);
+        setGdprChecked(false);
+        setLoading(false);
+        setSeconds(0);
+      };
+
 
   const renderStructuredOutput = () => {
     if (!output) return null;
@@ -385,11 +387,6 @@ export default function Home() {
           </div>
 
           <div className="flex gap-4 mb-4">
-            
-            {(uploadSuccess || cameraUploadSuccess) && !inputText && !pdfText && (
-              <p className="text-sm text-yellow-700 mb-2 text-center">⏳ Vyčkejte pár vteřin, než tlačítko zmodrá…</p>
-            )}
-
             <button
               className={`flex-1 py-3 rounded-lg text-lg font-semibold transition shadow ${
                 consentChecked && gdprChecked && (inputText || pdfText)
@@ -397,7 +394,7 @@ export default function Home() {
                   : 'bg-gray-400 text-white cursor-not-allowed'
               }`}
               onClick={handleSubmit}
-              disabled={!consentChecked || !gdprChecked || (!inputText && !pdfText)}
+              disabled={!consentChecked || !gdprChecked || (!ocrText && !pdfText && !inputText)}
             >
               Přelož do lidské řeči
             </button>
