@@ -118,6 +118,8 @@ export default function Home() {
       const handleImageUpload = async (event) => {
         const file = event.target.files[0];
         if (!file) return;
+
+        setLoading(true);
       
         try {
           const base64 = await convertFileToBase64(file);
@@ -127,25 +129,37 @@ export default function Home() {
         } catch (err) {
           console.error('Chyba při načítání obrázku:', err);
           alert('⚠️ Nepodařilo se načíst obrázek.');
-        }
-      };
+        } finally {
+                setLoading(false); // ✅ Tady má být
+      }
+    };
 
       
-      const handleCameraCapture = async (event) => {
-        const file = event.target.files[0];
-        if (!file) return;
-      
-        try {
-          const base64 = await convertFileToBase64(file);
-          const extractedText = await runOCR(base64);
-          setInputText(extractedText); // Uloží čistý text
-          setCameraUploadSuccess(true);
-        } catch (err) {
-          console.error('Chyba při načítání z kamery:', err);
-          alert('⚠️ Nepodařilo se načíst fotografii.');
-        }
-      };
-
+          const handleCameraCapture = async (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+          
+            setLoading(true);
+          
+            try {
+              const base64 = await convertFileToBase64(file);
+              const extractedText = await runOCR(base64);
+          
+              if (!extractedText || extractedText.trim().length < 10) {
+                alert("⚠️ Nerozpoznali jsme čitelný text.");
+                return;
+              }
+          
+              setInputText(extractedText); // Uloží čistý text
+              setCameraUploadSuccess(true);
+          
+            } catch (err) {
+              console.error('Chyba při načítání z kamery:', err);
+              alert('⚠️ Nepodařilo se načíst fotografii.');
+            } finally {
+              setLoading(false);
+            }
+          };
 
     const handleSubmit = async () => {
       if (!selectedType) {
@@ -315,17 +329,15 @@ export default function Home() {
                 </button>
               </div>
 
-
-            {!inputText.startsWith('data:image/') && !inputText.startsWith('data:application/pdf') && (
-              <textarea
-                placeholder="Sem vložte text..."
-                className="p-4 border border-gray-300 rounded bg-white shadow resize-none w-full mb-4"
-                rows={8}
-                value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
-              />
-            )}
-
+              {!(inputText.startsWith('data:image/') || pdfText) && (
+                <textarea
+                  placeholder="Sem vložte text..."
+                  className="p-4 border border-gray-300 rounded bg-white shadow resize-none w-full mb-4"
+                  rows={8}
+                  value={inputText}
+                  onChange={(e) => setInputText(e.target.value)}
+                />
+              )}
 
           <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={handlePDFUpload} className="mb-4" />
           <div className="flex flex-col gap-2 mb-4">
