@@ -62,20 +62,12 @@ export default function Home() {
             const reader = new FileReader();
             reader.onload = async () => {
               try {
-                const loadingTask = pdfjsLib.getDocument({ data: reader.result });
-                const pdf = await loadingTask.promise;
-                let fullText = '';
-        
-                for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-                  const page = await pdf.getPage(pageNum);
-                  const content = await page.getTextContent();
-                  fullText += content.items.map((item) => item.str).join(' ') + '\n';
-                }
-        
-                if (fullText.trim().length > 10) {
-                  setPdfText(fullText);
-                  setUploadSuccess(true);
-                } else {
+                let pdf;
+                try {
+                  const loadingTask = pdfjsLib.getDocument({ data: reader.result });
+                  pdf = await loadingTask.promise;
+                } catch (err) {
+                  console.warn('PDF nešlo přečíst standardní cestou, zkouším OCR:', err);
                   const images = await pdfToImages(file);
                   let combinedOCRText = '';
         
@@ -90,12 +82,32 @@ export default function Home() {
                   } else {
                     alert('⚠️ OCR nedokázalo z PDF nic rozpoznat.');
                   }
+        
+                  setLoading(false);
+                  return; // ⬅️ Ukončíme funkci, dál už nepokračujeme
                 }
+        
+                // klasické čtení textu ze stránek
+                let fullText = '';
+        
+                for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+                  const page = await pdf.getPage(pageNum);
+                  const content = await page.getTextContent();
+                  fullText += content.items.map((item) => item.str).join(' ') + '\n';
+                }
+        
+                if (fullText.trim().length > 10) {
+                  setPdfText(fullText);
+                  setUploadSuccess(true);
+                } else {
+                  alert('⚠️ PDF neobsahovalo čitelný text.');
+                }
+        
               } catch (err) {
                 console.error('Chyba při čtení nebo OCR PDF:', err);
                 alert('⚠️ Chyba při zpracování PDF.');
               } finally {
-                setLoading(false); // ✅ Tady má být
+                setLoading(false);
               }
             };
         
@@ -103,9 +115,10 @@ export default function Home() {
           } catch (error) {
             console.error('Chyba při čtení PDF:', error);
             alert('⚠️ Nepodařilo se načíst PDF.');
-            setLoading(false); // i fallback zde
+            setLoading(false);
           }
         };
+
 
        const convertFileToBase64 = (file) => {
         return new Promise((resolve, reject) => {
@@ -389,7 +402,7 @@ export default function Home() {
           <div className="flex gap-4 mb-4">
             <button
               className={`flex-1 py-3 rounded-lg text-lg font-semibold transition shadow ${
-                consentChecked && gdprChecked && (inputText || pdfText)
+                consentChecked && gdprChecked && (inputText || pdfText || ocrText)
                   ? 'bg-blue-600 text-white hover:bg-blue-700'
                   : 'bg-gray-400 text-white cursor-not-allowed'
               }`}
