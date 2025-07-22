@@ -22,6 +22,7 @@ export default function Home() {
   const isImageInput =
   typeof inputText === 'string' && inputText.startsWith('data:image/');
   const finalInput = isImageInput ? inputText : (pdfText || inputText);
+  const [ocrText, setOcrText] = useState('');
 
   useEffect(() => {
     let timer;
@@ -124,7 +125,7 @@ export default function Home() {
         try {
           const base64 = await convertFileToBase64(file);
           const extractedText = await runOCR(base64);
-          setInputText(extractedText); // Uloží čistý text
+          setOcrText(extractedText);
           setUploadSuccess(true);
         } catch (err) {
           console.error('Chyba při načítání obrázku:', err);
@@ -150,7 +151,7 @@ export default function Home() {
                 return;
               }
           
-              setInputText(extractedText); // Uloží čistý text
+              setOcrText(extractedText);
               setCameraUploadSuccess(true);
           
             } catch (err) {
@@ -241,7 +242,7 @@ export default function Home() {
                       🛡️ Tento výstup je určen pouze pro informativní účely a nenahrazuje lékařskou konzultaci. V případě nejasností se obraťte na svého lékaře.`
               ;
     
-        let finalText = pdfText || inputText;
+        let finalText = ocrText || pdfText || inputText;
 
           if (!finalText || finalText.length < 10) {
             alert('⚠️ Vstupní text je příliš krátký.');
