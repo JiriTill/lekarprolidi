@@ -1,39 +1,32 @@
-// utils/pdfToImages.js
 import * as pdfjsLib from 'pdfjs-dist';
-import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.entry';
+import * as pdfjsViewer from 'pdfjs-dist/web/pdf_viewer';
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`;
 
-export async function pdfToImages(file) {
-  const reader = new FileReader();
+/**
+ * Převádí PDF soubor na pole base64 PNG obrázků (po stránkách).
+ * @param {File} file PDF file
+ * @returns {Promise<string[]>} array of base64 image strings
+ */
+export const pdfToImages = async (file) => {
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
 
-  return new Promise((resolve, reject) => {
-    reader.onload = async () => {
-      try {
-        const pdf = await pdfjsLib.getDocument({ data: reader.result }).promise;
-        const images = [];
+  const images = [];
 
-        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-          const page = await pdf.getPage(pageNum);
-          const viewport = page.getViewport({ scale: 2 });
-          const canvas = document.createElement('canvas');
-          const context = canvas.getContext('2d');
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const viewport = page.getViewport({ scale: 2 }); // větší = lepší kvalita
 
-          canvas.width = viewport.width;
-          canvas.height = viewport.height;
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
 
-          await page.render({ canvasContext: context, viewport }).promise;
-          const image = canvas.toDataURL('image/png');
-          images.push(image);
-        }
+    await page.render({ canvasContext: context, viewport }).promise;
+    const base64 = canvas.toDataURL('image/png');
+    images.push(base64);
+  }
 
-        resolve(images);
-      } catch (error) {
-        reject(error);
-      }
-    };
-
-    reader.onerror = reject;
-    reader.readAsArrayBuffer(file);
-  });
-}
+  return images;
+};
