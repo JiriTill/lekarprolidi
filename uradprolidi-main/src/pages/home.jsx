@@ -33,6 +33,16 @@ export default function Home() {
     }
     return () => clearInterval(timer);
   }, [loading]);
+  
+  const runOCR = async (imageBase64) => {
+  try {
+    const result = await Tesseract.recognize(imageBase64, 'ces'); // čeština
+    return result.data.text;
+  } catch (error) {
+    console.error('Chyba při OCR:', error);
+    return '';
+  }
+};
 
 const handlePDFUpload = (event) => {
   const file = event.target.files[0];
