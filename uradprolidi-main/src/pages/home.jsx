@@ -9,18 +9,15 @@ import Tesseract from 'tesseract.js';
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`;
 
 export default function Home() {
-  // Consolidated text input into a single state variable
-  const [processedText, setProcessedText] = useState('');
+  const [processedText, setProcessedText] = useState(''); // Consolidated text content
   const [output, setOutput] = useState('');
   const [uploadStatusMessage, setUploadStatusMessage] = useState(''); // For user feedback messages
-  const [consentChecked, setConsentChecked] = useState(false);
-  const [gdprChecked, setGdprChecked] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [seconds, setSeconds] = useState(0);
-  const [selectedType, setSelectedType] = useState(null);
-
-  // Determine if there's any text content from any source
-  const hasContent = processedText.trim().length > 0;
+  const [consentChecked, setConsentChecked] = useState(false); //
+  const [gdprChecked, setGdprChecked] = useState(false); //
+  const [loading, setLoading] = useState(false); //
+  const [seconds, setSeconds] = useState(0); //
+  const [selectedType, setSelectedType] = useState(null); //
+  const hasContent = processedText.trim().length > 0; //
 
   useEffect(() => {
     let timer;
@@ -50,13 +47,13 @@ export default function Home() {
 
     setLoading(true);
     setProcessedText(''); // Clear previous content
-    setOutput(''); // Clear previous output when new file is uploaded
-    setUploadStatusMessage('Zpracovávám nahraný soubor. Chvíli to může trvat.');
+    setOutput(''); // Clear previous output
+    setUploadStatusMessage('Zpracovávám nahraný text. Chvíli to může trvat.'); // Set loading message
 
     try {
       const isPDF = file.type === 'application/pdf';
       if (!isPDF) {
-        setUploadStatusMessage('⚠️ Soubor není PDF.');
+        setUploadStatusMessage('⚠️ Soubor není PDF.'); // Use status message
         setLoading(false);
         return;
       }
@@ -65,7 +62,8 @@ export default function Home() {
       reader.onload = async () => {
         try {
           let pdf;
-          let fullText = '';
+          let fullText = ''; // Initialize fullText here
+
           try {
             const loadingTask = pdfjsLib.getDocument({ data: reader.result });
             pdf = await loadingTask.promise;
@@ -79,7 +77,7 @@ export default function Home() {
 
           } catch (err) {
             console.warn('PDF nešlo přečíst standardní cestou, zkouším OCR:', err);
-            setUploadStatusMessage('PDF neobsahuje čitelný text, zkouším OCR...');
+            setUploadStatusMessage('PDF neobsahuje čitelný text, zkouším OCR...'); // Indicate OCR attempt
             const images = await pdfToImages(file);
             let combinedOCRText = '';
 
@@ -90,32 +88,32 @@ export default function Home() {
             fullText = combinedOCRText; // Use OCR text if standard extraction fails
           }
 
+          // After both standard and OCR attempts, check fullText
           if (fullText.trim().length > 10) {
-            setProcessedText(fullText);
-            setUploadStatusMessage('✅ Dokument úspěšně nahrán a zpracován.');
+            setProcessedText(fullText); // Set to processedText
+            setUploadStatusMessage('✅ Dokument úspěšně nahrán a zpracován.'); // Success message
           } else {
             setProcessedText(''); // Ensure text is cleared if nothing found
-            setUploadStatusMessage('⚠️ Z dokumentu se nepodařilo rozpoznat žádný text (nebo je příliš krátký).');
+            setUploadStatusMessage('⚠️ Z dokumentu se nepodařilo rozpoznat žádný text (nebo je příliš krátký).'); // No text found
           }
 
         } catch (err) {
           console.error('Chyba při čtení nebo OCR PDF:', err);
-          setProcessedText('');
-          setUploadStatusMessage('⚠️ Chyba při zpracování PDF.');
+          setProcessedText(''); // Clear text on error
+          setUploadStatusMessage('⚠️ Chyba při zpracování PDF.'); // General processing error
         } finally {
           setLoading(false);
         }
       };
 
-      reader.readAsArrayBuffer(file);
+      reader.readAsArrayBuffer(file); // This call should be *inside* the outer try block
     } catch (error) {
       console.error('Chyba při čtení PDF:', error);
-      setProcessedText('');
-      setUploadStatusMessage('⚠️ Nepodařilo se načíst PDF soubor.');
+      setProcessedText(''); // Clear text on error
+      setUploadStatusMessage('⚠️ Nepodařilo se načíst PDF soubor.'); // File read error
       setLoading(false);
     }
   };
-
 
   const convertFileToBase64 = (file) => {
     return new Promise((resolve, reject) => {
@@ -132,53 +130,54 @@ export default function Home() {
 
     setLoading(true);
     setProcessedText(''); // Clear previous content
-    setOutput(''); // Clear previous output when new file is uploaded
-    setUploadStatusMessage('Zpracovávám nahraný soubor. Chvíli to může trvat.');
+    setOutput(''); // Clear previous output
+    setUploadStatusMessage('Zpracovávám nahraný text. Chvíli to může trvat.'); // Set loading message
 
     try {
       const base64 = await convertFileToBase64(file);
       const extractedText = await runOCR(base64);
 
       if (extractedText.trim().length > 10) {
-        setProcessedText(extractedText);
-        setUploadStatusMessage('✅ Obrázek úspěšně nahrán a text rozpoznán.');
+        setProcessedText(extractedText); // Set to processedText
+        setUploadStatusMessage('✅ Obrázek úspěšně nahrán a text rozpoznán.'); // Success message
       } else {
-        setProcessedText('');
-        setUploadStatusMessage('⚠️ Nerozpoznali jsme čitelný text z obrázku (nebo je příliš krátký).');
+        setProcessedText(''); // Clear if not enough text
+        setUploadStatusMessage('⚠️ Nerozpoznali jsme čitelný text z obrázku (nebo je příliš krátký).'); // No text found
       }
     } catch (err) {
       console.error('Chyba při načítání obrázku:', err);
-      setProcessedText('');
-      setUploadStatusMessage('⚠️ Nepodařilo se načíst obrázek.');
+      setProcessedText(''); // Clear on error
+      setUploadStatusMessage('⚠️ Nepodařilo se načíst obrázek.'); // Error message
     } finally {
       setLoading(false);
     }
   };
 
+
   const handleCameraCapture = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
 
-      setLoading(true);
-      setProcessedText(''); // Clear previous content
-      setOutput(''); // Clear previous output when new file is uploaded
-      setUploadStatusMessage('Zpracovávám nahraný soubor. Chvíli to může trvat.');
+    setLoading(true);
+    setProcessedText(''); // Clear previous content
+    setOutput(''); // Clear previous output
+    setUploadStatusMessage('Zpracovávám nahraný text. Chvíli to může trvat.'); // Set loading message
 
     try {
       const base64 = await convertFileToBase64(file);
       const extractedText = await runOCR(base64);
 
       if (extractedText.trim().length > 10) {
-        setProcessedText(extractedText);
-        setUploadStatusMessage('✅ Foto z kamery úspěšně nahráno a text rozpoznán.');
+        setProcessedText(extractedText); // Set to processedText
+        setUploadStatusMessage('✅ Foto z kamery úspěšně nahráno a text rozpoznán.'); // Success message
       } else {
-        setProcessedText('');
-        setUploadStatusMessage("⚠️ Nerozpoznali jsme čitelný text z fotografie (nebo je příliš krátký).");
+        setProcessedText(''); // Clear if not enough text
+        setUploadStatusMessage("⚠️ Nerozpoznali jsme čitelný text z fotografie (nebo je příliš krátký)."); // No text found
       }
     } catch (err) {
       console.error('Chyba při načítání z kamery:', err);
-      setProcessedText('');
-      setUploadStatusMessage('⚠️ Nepodařilo se načíst fotografii.');
+      setProcessedText(''); // Clear on error
+      setUploadStatusMessage('⚠️ Nepodařilo se načíst fotografii.'); // Error message
     } finally {
       setLoading(false);
     }
@@ -295,14 +294,14 @@ export default function Home() {
   };
 
   const handleClear = () => {
-    setProcessedText('');
+    setProcessedText(''); // Clear the consolidated text
     setOutput('');
-    setUploadStatusMessage('');
+    setUploadStatusMessage(''); // Clear any upload status messages
     setConsentChecked(false);
     setGdprChecked(false);
     setLoading(false);
     setSeconds(0);
-    // Optionally reset selectedType, or let the user choose again
+    // Optionally reset selectedType if you want:
     // setSelectedType(null);
   };
 
@@ -408,7 +407,11 @@ export default function Home() {
           </div>
 
           {uploadStatusMessage && (
-            <div className={`p-3 rounded mb-4 text-sm ${uploadStatusMessage.startsWith('✅') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+            <div className={`p-3 rounded mb-4 text-sm ${
+              uploadStatusMessage.startsWith('✅') ? 'bg-green-100 text-green-800' : // Success message
+              (uploadStatusMessage.startsWith('⚠️') ? 'bg-red-100 text-red-800' : // Error/warning message
+              'bg-orange-100 text-orange-800') // Default for processing or other informational messages
+            }`}>
               {uploadStatusMessage}
             </div>
           )}
