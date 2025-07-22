@@ -357,12 +357,9 @@ export default function Home() {
           <ul className="list-disc list-inside space-y-1">
             <li>Vyberte, zda se jedná o Lékařskou zprávu nebo Rozbor krve.</li>
             <li>Vložte text z dokumentu do textového pole, nebo nahrajte PDF či fotografii.</li>
-            <li>Souhlaste s podmínkami GDPR a odeslání dat.</li>
+            <li>Souhlaste s podmínkami.</li>
             <li>Klikněte na "Přelož do lidské řeči" a vyčkejte na překlad.</li>
           </ul>
-          <p className="mt-2 text-xs text-blue-800">
-            Veškerý text je zpracováván AI modelem GPT-4o a není ukládán.
-          </p>
         </div>
 
         {/* Document type selection */}
@@ -463,7 +460,7 @@ export default function Home() {
               onChange={(e) => setConsentChecked(e.target.checked)}
               disabled={loading}
             />
-            Souhlasím s podmínkami užití a odesláním dat k překladu do AI modelu.
+            Rozumím, že se nejedná o profesionální lékařskou radu.
           </label>
           <label className="flex items-center text-gray-700 text-sm">
             <input
@@ -473,7 +470,7 @@ export default function Home() {
               onChange={(e) => setGdprChecked(e.target.checked)}
               disabled={loading}
             />
-            Souhlasím se zpracováním osobních údajů v souladu s GDPR. Data nejsou ukládána.
+            Souhlasím se zpracováním vloženého dokumentu nebo textu. Data nejsou ukládána.
           </label>
         </div>
 
