@@ -44,58 +44,64 @@ export default function Home() {
   }
 };
 
-const handlePDFUpload = (event) => {
-  const file = event.target.files[0];
-  if (!file) return;
-
-  const isPDF = file.type === 'application/pdf';
-
-  if (isPDF) {
-    const reader = new FileReader();
-    reader.onload = async () => {
-      try {
-        const loadingTask = pdfjsLib.getDocument({ data: reader.result });
-        const pdf = await loadingTask.promise;
-        let fullText = '';
-
-        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-          const page = await pdf.getPage(pageNum);
-          const content = await page.getTextContent();
-          fullText += content.items.map((item) => item.str).join(' ') + '\n';
-        }
-
-        if (fullText.trim().length > 20) {
-          // ✅ PDF obsahuje text – rovnou uložíme
-          setPdfText(fullText);
-          setUploadSuccess(true);
-        } else {
-          // ❌ PDF neobsahuje text → převedeme na obrázky → spustíme OCR
-          try {
-            const images = await pdfToImages(file);
-            if (images.length > 0) {
-              let ocrText = '';
-              for (const img of images) {
-                const result = await Tesseract.recognize(img, 'ces');
-                ocrText += result.data.text + '\n';
-              }
-              setPdfText(ocrText);
-              setUploadSuccess(true);
-            } else {
-              alert('⚠️ PDF nelze přečíst ani převést na obrázek.');
-            }
-          } catch (err) {
-            console.error('Chyba při převodu PDF na obrázky:', err);
-            alert('⚠️ Chyba při zpracování PDF.');
+      const handlePDFUpload = async (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+      
+        try {
+          const isPDF = file.type === 'application/pdf';
+          if (!isPDF) {
+            alert('⚠️ Soubor není PDF.');
+            return;
           }
+      
+          const reader = new FileReader();
+          reader.onload = async () => {
+            try {
+              const loadingTask = pdfjsLib.getDocument({ data: reader.result });
+              const pdf = await loadingTask.promise;
+              let fullText = '';
+      
+              for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+                const page = await pdf.getPage(pageNum);
+                const content = await page.getTextContent();
+                fullText += content.items.map((item) => item.str).join(' ') + '\n';
+              }
+      
+              if (fullText.trim().length > 10) {
+                // PDF obsahuje normální text
+                setPdfText(fullText);
+                setUploadSuccess(true);
+              } else {
+                // PDF je obrazové → použij OCR
+                const images = await pdfToImages(file);
+                let combinedOCRText = '';
+      
+                for (const imageBase64 of images) {
+                  const textFromImage = await runOCR(imageBase64);
+                  combinedOCRText += textFromImage + '\n';
+                }
+      
+                if (combinedOCRText.trim().length > 10) {
+                  setPdfText(combinedOCRText);
+                  setUploadSuccess(true);
+                } else {
+                  alert('⚠️ OCR nedokázalo z PDF nic rozpoznat.');
+                }
+              }
+            } catch (err) {
+              console.error('Chyba při čtení nebo OCR PDF:', err);
+              alert('⚠️ Chyba při zpracování PDF.');
+            }
+          };
+      
+          reader.readAsArrayBuffer(file);
+        } catch (error) {
+          console.error("Chyba při zpracování PDF:", error);
+          alert('⚠️ Nepodařilo se načíst PDF.');
         }
-      } catch (error) {
-        console.error("Chyba při zpracování PDF:", error);
-        alert('⚠️ Chyba při čtení PDF. Ujistěte se, že soubor je čitelný.');
-      }
-    };
-    reader.readAsArrayBuffer(file);
-  }
-};
+      };
+
 
        const convertFileToBase64 = (file) => {
         return new Promise((resolve, reject) => {
@@ -112,13 +118,15 @@ const handlePDFUpload = (event) => {
       
         try {
           const base64 = await convertFileToBase64(file);
-          setInputText(base64);
+          const extractedText = await runOCR(base64);
+          setInputText(extractedText); // Uloží čistý text
           setUploadSuccess(true);
         } catch (err) {
           console.error('Chyba při načítání obrázku:', err);
           alert('⚠️ Nepodařilo se načíst obrázek.');
         }
       };
+
       
       const handleCameraCapture = async (event) => {
         const file = event.target.files[0];
@@ -126,13 +134,15 @@ const handlePDFUpload = (event) => {
       
         try {
           const base64 = await convertFileToBase64(file);
-          setInputText(base64);
+          const extractedText = await runOCR(base64);
+          setInputText(extractedText); // Uloží čistý text
           setCameraUploadSuccess(true);
         } catch (err) {
           console.error('Chyba při načítání z kamery:', err);
           alert('⚠️ Nepodařilo se načíst fotografii.');
         }
       };
+
 
     const handleSubmit = async () => {
       if (!selectedType) {
@@ -214,22 +224,18 @@ const handlePDFUpload = (event) => {
                       🛡️ Tento výstup je určen pouze pro informativní účely a nenahrazuje lékařskou konzultaci. V případě nejasností se obraťte na svého lékaře.`
               ;
     
-        let requestBody = { prompt };
-    
-        // TEXT input
-        if (typeof inputText === 'string' && inputText.length > 10 && !inputText.startsWith('data:image/')) {
-          requestBody.text = inputText;
-        }
-    
-        // IMAGE (base64) input
-        else if (typeof inputText === 'string' && inputText.startsWith('data:image/')) {
-          requestBody.imageUrls = [inputText];
-        }
-    
-        // PDF converted to text fallback
-        else if (pdfText && pdfText.length > 10) {
-          requestBody.text = pdfText;
-        }
+        let finalText = pdfText || inputText;
+
+          if (!finalText || finalText.length < 10) {
+            alert('⚠️ Vstupní text je příliš krátký.');
+            return;
+          }
+          
+          let requestBody = {
+            prompt,
+            text: finalText
+          };
+
     
         const response = await fetch('/api/translateGpt4o', {
           method: 'POST',
