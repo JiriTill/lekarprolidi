@@ -7,7 +7,7 @@ import { pdfToImages } from '../utils/pdfToImages';
 import Tesseract from 'tesseract.js';
 
 // Configure PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`;
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@4.0.269/build/pdf.worker.min.js`;
 
 export default function Home() {
   // Consolidated state for all text content (manual input, PDF, OCR)
