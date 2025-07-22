@@ -181,11 +181,11 @@ export default function Home() {
         return;
       }
     
-      if (!inputText && !pdfText) {
+      if (!inputText && !pdfText && !ocrText) {
         alert('⚠️ Nezadal jsi žádný text ani nenahrál dokument.');
         return;
       }
-    
+          
       setLoading(true);
       setOutput('');
     
