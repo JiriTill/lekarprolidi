@@ -3,6 +3,8 @@ import * as pdfjsLib from 'pdfjs-dist/build/pdf';
 import FeedbackForm from '../components/FeedbackForm';
 import { Link } from 'react-router-dom';
 import Footer from '../components/Footer';
+import { pdfToImages } from '../utils/pdfToImages';
+import Tesseract from 'tesseract.js';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`;
 
