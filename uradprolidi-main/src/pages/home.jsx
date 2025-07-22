@@ -97,60 +97,60 @@ export default function Home() {
     }
    };
 
-  const handleCameraCapture = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.capture = 'environment';
-    input.style.display = 'none';
-
-    input.addEventListener('change', async (event) => {
-      const file = event.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          setInputText(reader.result);
-          setCameraUploadSuccess(true);
-          setUploadSuccess(true);
-        };
-        reader.readAsDataURL(file);
-      }
-    });
-
-    document.body.appendChild(input);
-    input.click();
-    document.body.removeChild(input);
-  };
-
-  const convertFileToBase64 = (file) => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = (error) => reject(error);
-    });
-  };
-
-    const handleSubmit = async () => {
-        if (!selectedType) {
-          alert('⚠️ Vyberte, čemu chcete rozumět – lékařskou zprávu nebo rozbor krve.');
-          return;
-        }
+       const convertFileToBase64 = (file) => {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.readAsDataURL(file);
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = (error) => reject(error);
+        });
+      };
       
-        const finalInput = isImageInput ? inputText : (pdfText || inputText);
-      
-         if (!finalInput || (typeof finalInput === 'string' && finalInput.trim().length < 5)) {
-          alert('⚠️ Nezadal jsi žádný text ani nenahrál dokument.');
-          return;
-        }
-      
-        setLoading(true);
-        setOutput('');
+      const handleImageUpload = async (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
       
         try {
-          let prompt = '';
-          if (selectedType === 'zprava') {
-            prompt = `🛡️ Tento překlad slouží pouze k lepšímu pochopení obsahu lékařské zprávy a nenahrazuje konzultaci s lékařem.
+          const base64 = await convertFileToBase64(file);
+          setInputText(base64);
+          setUploadSuccess(true);
+        } catch (err) {
+          console.error('Chyba při načítání obrázku:', err);
+          alert('⚠️ Nepodařilo se načíst obrázek.');
+        }
+      };
+      
+      const handleCameraCapture = async (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+      
+        try {
+          const base64 = await convertFileToBase64(file);
+          setInputText(base64);
+          setCameraUploadSuccess(true);
+        } catch (err) {
+          console.error('Chyba při načítání z kamery:', err);
+          alert('⚠️ Nepodařilo se načíst fotografii.');
+        }
+      };
+
+    const handleSubmit = async () => {
+      if (!selectedType) {
+        alert('⚠️ Vyberte, čemu chcete rozumět – lékařskou zprávu nebo rozbor krve.');
+        return;
+      }
+    
+      if (!inputText && !pdfText) {
+        alert('⚠️ Nezadal jsi žádný text ani nenahrál dokument.');
+        return;
+      }
+    
+      setLoading(true);
+      setOutput('');
+    
+      try {
+        const prompt = selectedType === 'zprava'
+          ? '🛡️ Tento překlad slouží pouze k lepšímu pochopení obsahu lékařské zprávy a nenahrazuje konzultaci s lékařem.
 
                       Přelož následující lékařskou zprávu nebo zdravotní dokument (např. výpis z vyšetření, propouštěcí zprávu, zprávu od specialisty) do jednoduché, srozumitelné češtiny vhodné pro běžného člověka bez lékařského vzdělání.
                       
@@ -184,10 +184,9 @@ export default function Home() {
                       
                       Na konec připoj tuto poznámku:
                       
-                      🛡️ Tento výstup slouží pouze k orientaci v obsahu lékařské zprávy. Nejedná se o lékařskou radu. Pro přesné informace nebo další postup kontaktujte svého lékaře.
-                    "`;
-          } else if (selectedType === 'rozbor') {
-            prompt = `🛡️ Tento výstup slouží pouze k lepšímu pochopení výsledků krevního testu a nenahrazuje konzultaci s lékařem.
+                      🛡️ Tento výstup slouží pouze k orientaci v obsahu lékařské zprávy. Nejedná se o lékařskou radu. Pro přesné informace nebo další postup kontaktujte svého lékaře.'
+                        
+          : '🛡️ Tento výstup slouží pouze k lepšímu pochopení výsledků krevního testu a nenahrazuje konzultaci s lékařem.
 
                       Vysvětli následující výsledky krevního rozboru jednoduše a přehledně. Výstup má být srozumitelný i pro běžného člověka bez lékařského vzdělání.
                       
@@ -212,33 +211,41 @@ export default function Home() {
                       
                       Na závěr připoj poznámku:
                       
-                      🛡️ Tento výstup je určen pouze pro informativní účely a nenahrazuje lékařskou konzultaci. V případě nejasností se obraťte na svého lékaře.
-                      `;
-          }
-      
-          const response = await fetch('/api/translateGpt4o', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              imageUrls: isImageInput
-                ? [await convertFileToBase64(finalInput)]
-                : Array.isArray(finalInput)
-                  ? finalInput
-                  : undefined,
-              text: !isImageInput ? finalInput : undefined,
-              prompt,
-            }),
-          });
-
-          const data = await response.json();
-          setOutput(data.result || '⚠️ Odpověď je prázdná.');
-        } catch (error) {
-          console.error(error);
-          setOutput('⚠️ Došlo k chybě při zpracování. Ujistěte se, že dokument je čitelný.');
-        } finally {
-          setLoading(false);
+                      🛡️ Tento výstup je určen pouze pro informativní účely a nenahrazuje lékařskou konzultaci. V případě nejasností se obraťte na svého lékaře.'
+              ;
+    
+        let requestBody = { prompt };
+    
+        // TEXT input
+        if (typeof inputText === 'string' && inputText.length > 10 && !inputText.startsWith('data:image/')) {
+          requestBody.text = inputText;
         }
-      };
+    
+        // IMAGE (base64) input
+        else if (typeof inputText === 'string' && inputText.startsWith('data:image/')) {
+          requestBody.imageUrls = [inputText];
+        }
+    
+        // PDF converted to text fallback
+        else if (pdfText && pdfText.length > 10) {
+          requestBody.text = pdfText;
+        }
+    
+        const response = await fetch('/api/translateGpt4o', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(requestBody),
+        });
+    
+        const data = await response.json();
+        setOutput(data.result || '⚠️ Odpověď je prázdná.');
+      } catch (error) {
+        console.error('Frontend error:', error);
+        setOutput('⚠️ Došlo k chybě při zpracování.');
+      } finally {
+        setLoading(false);
+      }
+    };
 
   const handleClear = () => {
     setInputText('');
@@ -309,15 +316,30 @@ export default function Home() {
           />
 
           <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={handlePDFUpload} className="mb-4" />
-          {uploadSuccess && <span className="text-green-600 text-xl">✅</span>}
+          <div className="flex flex-col gap-2 mb-4">
+              <label className="text-sm text-gray-700">
+                📂 Nahrát obrázek (ručně):
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="mt-1"
+                />
+              </label>
+            
+              <label className="text-sm text-gray-700">
+                📷 Vyfotit dokument mobilem:
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={handleCameraCapture}
+                  className="mt-1"
+                />
+              </label>
+            </div>
 
-          <button
-            type="button"
-            className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded transition mb-4"
-            onClick={handleCameraCapture}
-          >
-            {cameraUploadSuccess ? '✅ Správně nahráno' : '📷 Vyfotit dokument mobilem'}
-          </button>
+          {uploadSuccess && <span className="text-green-600 text-xl">✅</span>}
 
           <div className="bg-gray-50 rounded border p-4 mb-6 text-sm text-gray-700 space-y-2">
             <label className="block">
