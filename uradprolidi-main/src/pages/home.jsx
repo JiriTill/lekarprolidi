@@ -44,64 +44,67 @@ export default function Home() {
   }
 };
 
-      const handlePDFUpload = async (event) => {
-        const file = event.target.files[0];
-        if (!file) return;
-      
-        try {
-          const isPDF = file.type === 'application/pdf';
-          if (!isPDF) {
-            alert('⚠️ Soubor není PDF.');
-            return;
-          }
-      
-          const reader = new FileReader();
-          reader.onload = async () => {
-            try {
-              const loadingTask = pdfjsLib.getDocument({ data: reader.result });
-              const pdf = await loadingTask.promise;
-              let fullText = '';
-      
-              for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-                const page = await pdf.getPage(pageNum);
-                const content = await page.getTextContent();
-                fullText += content.items.map((item) => item.str).join(' ') + '\n';
-              }
-      
-              if (fullText.trim().length > 10) {
-                // PDF obsahuje normální text
-                setPdfText(fullText);
-                setUploadSuccess(true);
-              } else {
-                // PDF je obrazové → použij OCR
-                const images = await pdfToImages(file);
-                let combinedOCRText = '';
-      
-                for (const imageBase64 of images) {
-                  const textFromImage = await runOCR(imageBase64);
-                  combinedOCRText += textFromImage + '\n';
+        const handlePDFUpload = async (event) => {
+          const file = event.target.files[0];
+          if (!file) return;
+        
+          setLoading(true);
+        
+          try {
+            const isPDF = file.type === 'application/pdf';
+            if (!isPDF) {
+              alert('⚠️ Soubor není PDF.');
+              setLoading(false);
+              return;
+            }
+        
+            const reader = new FileReader();
+            reader.onload = async () => {
+              try {
+                const loadingTask = pdfjsLib.getDocument({ data: reader.result });
+                const pdf = await loadingTask.promise;
+                let fullText = '';
+        
+                for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+                  const page = await pdf.getPage(pageNum);
+                  const content = await page.getTextContent();
+                  fullText += content.items.map((item) => item.str).join(' ') + '\n';
                 }
-      
-                if (combinedOCRText.trim().length > 10) {
-                  setPdfText(combinedOCRText);
+        
+                if (fullText.trim().length > 10) {
+                  setPdfText(fullText);
                   setUploadSuccess(true);
                 } else {
-                  alert('⚠️ OCR nedokázalo z PDF nic rozpoznat.');
+                  const images = await pdfToImages(file);
+                  let combinedOCRText = '';
+        
+                  for (const imageBase64 of images) {
+                    const textFromImage = await runOCR(imageBase64);
+                    combinedOCRText += textFromImage + '\n';
+                  }
+        
+                  if (combinedOCRText.trim().length > 10) {
+                    setPdfText(combinedOCRText);
+                    setUploadSuccess(true);
+                  } else {
+                    alert('⚠️ OCR nedokázalo z PDF nic rozpoznat.');
+                  }
                 }
+              } catch (err) {
+                console.error('Chyba při čtení nebo OCR PDF:', err);
+                alert('⚠️ Chyba při zpracování PDF.');
+              } finally {
+                setLoading(false); // ✅ Tady má být
               }
-            } catch (err) {
-              console.error('Chyba při čtení nebo OCR PDF:', err);
-              alert('⚠️ Chyba při zpracování PDF.');
-            }
-          };
-      
-          reader.readAsArrayBuffer(file);
-        } catch (error) {
-          console.error("Chyba při zpracování PDF:", error);
-          alert('⚠️ Nepodařilo se načíst PDF.');
-        }
-      };
-
+            };
+        
+            reader.readAsArrayBuffer(file);
+          } catch (error) {
+            console.error('Chyba při čtení PDF:', error);
+            alert('⚠️ Nepodařilo se načíst PDF.');
+            setLoading(false); // i fallback zde
+          }
+        };
 
        const convertFileToBase64 = (file) => {
         return new Promise((resolve, reject) => {
@@ -313,16 +316,26 @@ export default function Home() {
               </div>
 
 
-          <textarea
-            placeholder="Sem vložte text..."
-            className="p-4 border border-gray-300 rounded bg-white shadow resize-none w-full mb-4"
-            rows={8}
-            value={inputText.startsWith('data:image/') ? '' : inputText}
-            onChange={(e) => setInputText(e.target.value)}
-          />
+            {!inputText.startsWith('data:image/') && !inputText.startsWith('data:application/pdf') && (
+              <textarea
+                placeholder="Sem vložte text..."
+                className="p-4 border border-gray-300 rounded bg-white shadow resize-none w-full mb-4"
+                rows={8}
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+              />
+            )}
+
 
           <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={handlePDFUpload} className="mb-4" />
           <div className="flex flex-col gap-2 mb-4">
+
+            {loading && !output && (
+              <div className="text-center text-blue-600 text-sm mt-2 italic">
+                ⏳ Čekejte, dokument se zpracovává. Může to chvíli trvat…
+              </div>
+            )}
+
               <label className="text-sm text-gray-700">
                 📂 Nahrát obrázek (ručně):
                 <input
