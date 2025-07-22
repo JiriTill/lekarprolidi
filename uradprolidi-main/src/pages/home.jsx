@@ -50,7 +50,8 @@ export default function Home() {
 
     setLoading(true);
     setProcessedText(''); // Clear previous content
-    setUploadStatusMessage(''); // Clear previous messages
+    setOutput(''); // Clear previous output when new file is uploaded
+    setUploadStatusMessage('Zpracovávám nahraný soubor. Chvíli to může trvat.');
 
     try {
       const isPDF = file.type === 'application/pdf';
@@ -131,7 +132,8 @@ export default function Home() {
 
     setLoading(true);
     setProcessedText(''); // Clear previous content
-    setUploadStatusMessage(''); // Clear previous messages
+    setOutput(''); // Clear previous output when new file is uploaded
+    setUploadStatusMessage('Zpracovávám nahraný soubor. Chvíli to může trvat.');
 
     try {
       const base64 = await convertFileToBase64(file);
@@ -157,9 +159,10 @@ export default function Home() {
     const file = event.target.files[0];
     if (!file) return;
 
-    setLoading(true);
-    setProcessedText(''); // Clear previous content
-    setUploadStatusMessage(''); // Clear previous messages
+      setLoading(true);
+      setProcessedText(''); // Clear previous content
+      setOutput(''); // Clear previous output when new file is uploaded
+      setUploadStatusMessage('Zpracovávám nahraný soubor. Chvíli to může trvat.');
 
     try {
       const base64 = await convertFileToBase64(file);
