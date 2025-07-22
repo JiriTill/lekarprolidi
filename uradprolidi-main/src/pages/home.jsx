@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react'; // Import useRef
 import * as pdfjsLib from 'pdfjs-dist/build/pdf';
 import FeedbackForm from '../components/FeedbackForm';
 import { Link } from 'react-router-dom';
@@ -18,6 +18,10 @@ export default function Home() {
   const [seconds, setSeconds] = useState(0); //
   const [selectedType, setSelectedType] = useState(null); //
   const hasContent = processedText.trim().length > 0; //
+
+  // Create refs for the hidden file inputs
+  const fileUploadRef = useRef(null);
+  const cameraCaptureRef = useRef(null);
 
   useEffect(() => {
     let timer;
@@ -41,7 +45,8 @@ export default function Home() {
     }
   };
 
-  const handlePDFUpload = async (event) => {
+  // Consolidated handler for PDF and general image uploads
+  const handleFileUpload = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
 
@@ -51,69 +56,74 @@ export default function Home() {
     setUploadStatusMessage('Zpracovávám nahraný text. Chvíli to může trvat.'); // Set loading message
 
     try {
-      const isPDF = file.type === 'application/pdf';
-      if (!isPDF) {
-        setUploadStatusMessage('⚠️ Soubor není PDF.'); // Use status message
-        setLoading(false);
-        return;
-      }
-
-      const reader = new FileReader();
-      reader.onload = async () => {
-        try {
-          let pdf;
-          let fullText = ''; // Initialize fullText here
-
+      if (file.type === 'application/pdf') {
+        const reader = new FileReader();
+        reader.onload = async () => {
           try {
-            const loadingTask = pdfjsLib.getDocument({ data: reader.result });
-            pdf = await loadingTask.promise;
+            let pdf;
+            let fullText = '';
 
-            // classical text extraction from pages
-            for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-              const page = await pdf.getPage(pageNum);
-              const content = await page.getTextContent();
-              fullText += content.items.map((item) => item.str).join(' ') + '\n';
+            try {
+              const loadingTask = pdfjsLib.getDocument({ data: reader.result });
+              pdf = await loadingTask.promise;
+
+              for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+                const page = await pdf.getPage(pageNum);
+                const content = await page.getTextContent();
+                fullText += content.items.map((item) => item.str).join(' ') + '\n';
+              }
+            } catch (err) {
+              console.warn('PDF nešlo přečíst standardní cestou, zkouším OCR:', err);
+              setUploadStatusMessage('PDF neobsahuje čitelný text, zkouším OCR...');
+              const images = await pdfToImages(file); // pdfToImages takes the File object
+              let combinedOCRText = '';
+              for (const imageBase64 of images) {
+                const textFromImage = await runOCR(imageBase64);
+                combinedOCRText += textFromImage + '\n';
+              }
+              fullText = combinedOCRText;
             }
 
+            if (fullText.trim().length > 10) {
+              setProcessedText(fullText);
+              setUploadStatusMessage('✅ Dokument úspěšně nahrán a zpracován.');
+            } else {
+              setProcessedText('');
+              setUploadStatusMessage('⚠️ Z dokumentu se nepodařilo rozpoznat žádný text (nebo je příliš krátký).');
+            }
           } catch (err) {
-            console.warn('PDF nešlo přečíst standardní cestou, zkouším OCR:', err);
-            setUploadStatusMessage('PDF neobsahuje čitelný text, zkouším OCR...'); // Indicate OCR attempt
-            const images = await pdfToImages(file);
-            let combinedOCRText = '';
-
-            for (const imageBase64 of images) {
-              const textFromImage = await runOCR(imageBase64);
-              combinedOCRText += textFromImage + '\n';
-            }
-            fullText = combinedOCRText; // Use OCR text if standard extraction fails
+            console.error('Chyba při čtení nebo OCR PDF:', err);
+            setProcessedText('');
+            setUploadStatusMessage('⚠️ Chyba při zpracování PDF.');
+          } finally {
+            setLoading(false);
           }
+        };
+        reader.readAsArrayBuffer(file);
+      } else if (file.type.startsWith('image/')) { // Handle general image files (not camera specific)
+        const base64 = await convertFileToBase64(file);
+        const extractedText = await runOCR(base64);
 
-          // After both standard and OCR attempts, check fullText
-          if (fullText.trim().length > 10) {
-            setProcessedText(fullText); // Set to processedText
-            setUploadStatusMessage('✅ Dokument úspěšně nahrán a zpracován.'); // Success message
-          } else {
-            setProcessedText(''); // Ensure text is cleared if nothing found
-            setUploadStatusMessage('⚠️ Z dokumentu se nepodařilo rozpoznat žádný text (nebo je příliš krátký).'); // No text found
-          }
-
-        } catch (err) {
-          console.error('Chyba při čtení nebo OCR PDF:', err);
-          setProcessedText(''); // Clear text on error
-          setUploadStatusMessage('⚠️ Chyba při zpracování PDF.'); // General processing error
-        } finally {
-          setLoading(false);
+        if (extractedText.trim().length > 10) {
+          setProcessedText(extractedText);
+          setUploadStatusMessage('✅ Obrázek úspěšně nahrán a text rozpoznán.');
+        } else {
+          setProcessedText('');
+          setUploadStatusMessage('⚠️ Nerozpoznali jsme čitelný text z obrázku (nebo je příliš krátký).');
         }
-      };
-
-      reader.readAsArrayBuffer(file); // This call should be *inside* the outer try block
+        setLoading(false); // Ensure loading is reset after image processing
+      } else {
+        setUploadStatusMessage('⚠️ Nepodporovaný typ souboru. Nahrajte PDF nebo obrázek.');
+        setLoading(false);
+      }
     } catch (error) {
-      console.error('Chyba při čtení PDF:', error);
-      setProcessedText(''); // Clear text on error
-      setUploadStatusMessage('⚠️ Nepodařilo se načíst PDF soubor.'); // File read error
+      console.error('Chyba při nahrávání souboru:', error);
+      setProcessedText('');
+      setUploadStatusMessage('⚠️ Nepodařilo se načíst soubor.');
       setLoading(false);
     }
   };
+
 
   const convertFileToBase64 = (file) => {
     return new Promise((resolve, reject) => {
@@ -124,36 +134,7 @@ export default function Home() {
     });
   };
 
-  const handleImageUpload = async (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    setLoading(true);
-    setProcessedText(''); // Clear previous content
-    setOutput(''); // Clear previous output
-    setUploadStatusMessage('Zpracovávám nahraný text. Chvíli to může trvat.'); // Set loading message
-
-    try {
-      const base64 = await convertFileToBase64(file);
-      const extractedText = await runOCR(base64);
-
-      if (extractedText.trim().length > 10) {
-        setProcessedText(extractedText); // Set to processedText
-        setUploadStatusMessage('✅ Obrázek úspěšně nahrán a text rozpoznán.'); // Success message
-      } else {
-        setProcessedText(''); // Clear if not enough text
-        setUploadStatusMessage('⚠️ Nerozpoznali jsme čitelný text z obrázku (nebo je příliš krátký).'); // No text found
-      }
-    } catch (err) {
-      console.error('Chyba při načítání obrázku:', err);
-      setProcessedText(''); // Clear on error
-      setUploadStatusMessage('⚠️ Nepodařilo se načíst obrázek.'); // Error message
-    } finally {
-      setLoading(false);
-    }
-  };
-
-
+  // Handler specifically for camera capture
   const handleCameraCapture = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
@@ -376,34 +357,44 @@ export default function Home() {
             </div>
           )}
 
-          <div className="flex flex-col gap-2 mb-4">
-            <label className="text-sm text-gray-700">
-              📂 Nahrát PDF:
-              <input type="file" accept=".pdf" onChange={handlePDFUpload} className="mt-1" disabled={loading} />
-            </label>
+          {/* New Button-based Upload Section */}
+          <div className="flex flex-col gap-4 mb-4">
+            {/* Button for PDF or Image Upload */}
+            <button
+              type="button"
+              className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-lg shadow-md transition duration-300 ease-in-out disabled:bg-gray-400 disabled:cursor-not-allowed"
+              onClick={() => fileUploadRef.current?.click()}
+              disabled={loading}
+            >
+              📂 Nahrát dokument (PDF nebo obrázek)
+            </button>
+            <input
+              type="file"
+              accept=".pdf,image/*" // Accept both PDF and any image
+              onChange={handleFileUpload} // This new combined handler
+              ref={fileUploadRef}
+              className="hidden" // Hide the input
+              disabled={loading}
+            />
 
-            <label className="text-sm text-gray-700">
-              📂 Nahrát obrázek (ručně):
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleImageUpload}
-                className="mt-1"
-                disabled={loading}
-              />
-            </label>
-
-            <label className="text-sm text-gray-700">
-              📷 Vyfotit dokument mobilem:
-              <input
-                type="file"
-                accept="image/*"
-                capture="environment"
-                onChange={handleCameraCapture}
-                className="mt-1"
-                disabled={loading}
-              />
-            </label>
+            {/* Button for Camera Capture */}
+            <button
+              type="button"
+              className="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg shadow-md transition duration-300 ease-in-out disabled:bg-gray-400 disabled:cursor-not-allowed"
+              onClick={() => cameraCaptureRef.current?.click()}
+              disabled={loading}
+            >
+              📷 Vyfotit dokument mobilem
+            </button>
+            <input
+              type="file"
+              accept="image/*"
+              capture="environment" // Forces camera on mobile
+              onChange={handleCameraCapture} // Dedicated camera handler
+              ref={cameraCaptureRef}
+              className="hidden" // Hide the input
+              disabled={loading}
+            />
           </div>
 
           {uploadStatusMessage && (
