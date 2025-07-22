@@ -226,9 +226,6 @@ export default function Home() {
                       🏥 Oddělení / specializace:
                       (např. neurologie, urologie; pokud není uvedeno, napiš „Není uvedeno“)
 
-                      👤 Kdo je pacient:
-                      (věk, pohlaví, důvod návštěvy – pokud není uvedeno, napiš „Informace chybí“)
-
                       📄 Co se zjistilo:
                       (stručně popiš hlavní zjištění ze zprávy, co bylo pozorováno)
 
