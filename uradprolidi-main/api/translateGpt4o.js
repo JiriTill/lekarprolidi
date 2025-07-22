@@ -18,9 +18,7 @@ export default async function handler(req, res) {
         content: [
           ...imageUrls.map((base64) => ({
             type: 'image_url',
-            image_url: {
-              url: base64, // base64 Data URI already
-            },
+            image_url: { url: base64 },
           })),
           {
             type: 'text',
@@ -48,16 +46,17 @@ export default async function handler(req, res) {
       }),
     });
 
+    const data = await response.json();
+
     if (!response.ok) {
-      const err = await response.text();
-      return res.status(500).json({ error: `OpenAI error: ${err}` });
+      return res.status(500).json({
+        error: data.error?.message || 'OpenAI API error.',
+      });
     }
 
-    const data = await response.json();
-    const result = data.choices?.[0]?.message?.content || '';
-    res.status(200).json({ result });
+    res.status(200).json({ result: data.choices?.[0]?.message?.content || '' });
   } catch (error) {
-    console.error('Error communicating with OpenAI:', error);
-    res.status(500).json({ error: 'Server error while contacting OpenAI.' });
+    console.error('Server Error:', error);
+    res.status(500).json({ error: 'Unexpected server error.' });
   }
 }
