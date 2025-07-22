@@ -1,28 +1,33 @@
-import React, { useState, useEffect, useRef } from 'react'; // Import useRef
+import React, { useState, useEffect, useRef } from 'react';
 import * as pdfjsLib from 'pdfjs-dist/build/pdf';
 import FeedbackForm from '../components/FeedbackForm';
 import { Link } from 'react-router-dom';
-import Footer from '../components/Footer';
+import Footer from '../components/Footer'; // Keep Footer import
 import { pdfToImages } from '../utils/pdfToImages';
 import Tesseract from 'tesseract.js';
 
+// Configure PDF.js worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`;
 
 export default function Home() {
-  const [processedText, setProcessedText] = useState(''); // Consolidated text content
+  // Consolidated state for all text content (manual input, PDF, OCR)
+  const [processedText, setProcessedText] = useState('');
   const [output, setOutput] = useState('');
-  const [uploadStatusMessage, setUploadStatusMessage] = useState(''); // For user feedback messages
-  const [consentChecked, setConsentChecked] = useState(false); //
-  const [gdprChecked, setGdprChecked] = useState(false); //
-  const [loading, setLoading] = useState(false); //
-  const [seconds, setSeconds] = useState(0); //
-  const [selectedType, setSelectedType] = useState(null); //
-  const hasContent = processedText.trim().length > 0; //
+  const [uploadStatusMessage, setUploadStatusMessage] = useState('');
+  const [consentChecked, setConsentChecked] = useState(false);
+  const [gdprChecked, setGdprChecked] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [seconds, setSeconds] = useState(0);
+  const [selectedType, setSelectedType] = useState(null);
 
-  // Create refs for the hidden file inputs
+  // Derived state: checks if there's any content to process
+  const hasContent = processedText.trim().length > 0;
+
+  // Refs for hidden file input elements
   const fileUploadRef = useRef(null);
   const cameraCaptureRef = useRef(null);
 
+  // Timer for loading feedback
   useEffect(() => {
     let timer;
     if (loading) {
@@ -34,97 +39,7 @@ export default function Home() {
     return () => clearInterval(timer);
   }, [loading]);
 
-  const runOCR = async (imageBase64) => {
-    try {
-      const result = await Tesseract.recognize(imageBase64, 'ces'); // čeština
-      return result.data.text;
-    } catch (error) {
-      console.error('Chyba při OCR:', error);
-      setUploadStatusMessage('⚠️ Chyba při OCR: ' + error.message);
-      return '';
-    }
-  };
-
-  // Consolidated handler for PDF and general image uploads
-  const handleFileUpload = async (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    setLoading(true);
-    setProcessedText(''); // Clear previous content
-    setOutput(''); // Clear previous output
-    setUploadStatusMessage('Zpracovávám nahraný text. Chvíli to může trvat.'); // Set loading message
-
-    try {
-      if (file.type === 'application/pdf') {
-        const reader = new FileReader();
-        reader.onload = async () => {
-          try {
-            let pdf;
-            let fullText = '';
-
-            try {
-              const loadingTask = pdfjsLib.getDocument({ data: reader.result });
-              pdf = await loadingTask.promise;
-
-              for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-                const page = await pdf.getPage(pageNum);
-                const content = await page.getTextContent();
-                fullText += content.items.map((item) => item.str).join(' ') + '\n';
-              }
-            } catch (err) {
-              console.warn('PDF nešlo přečíst standardní cestou, zkouším OCR:', err);
-              setUploadStatusMessage('PDF neobsahuje čitelný text, zkouším OCR...');
-              const images = await pdfToImages(file); // pdfToImages takes the File object
-              let combinedOCRText = '';
-              for (const imageBase64 of images) {
-                const textFromImage = await runOCR(imageBase64);
-                combinedOCRText += textFromImage + '\n';
-              }
-              fullText = combinedOCRText;
-            }
-
-            if (fullText.trim().length > 10) {
-              setProcessedText(fullText);
-              setUploadStatusMessage('✅ Dokument úspěšně nahrán a zpracován.');
-            } else {
-              setProcessedText('');
-              setUploadStatusMessage('⚠️ Z dokumentu se nepodařilo rozpoznat žádný text (nebo je příliš krátký).');
-            }
-          } catch (err) {
-            console.error('Chyba při čtení nebo OCR PDF:', err);
-            setProcessedText('');
-            setUploadStatusMessage('⚠️ Chyba při zpracování PDF.');
-          } finally {
-            setLoading(false);
-          }
-        };
-        reader.readAsArrayBuffer(file);
-      } else if (file.type.startsWith('image/')) { // Handle general image files (not camera specific)
-        const base64 = await convertFileToBase64(file);
-        const extractedText = await runOCR(base64);
-
-        if (extractedText.trim().length > 10) {
-          setProcessedText(extractedText);
-          setUploadStatusMessage('✅ Obrázek úspěšně nahrán a text rozpoznán.');
-        } else {
-          setProcessedText('');
-          setUploadStatusMessage('⚠️ Nerozpoznali jsme čitelný text z obrázku (nebo je příliš krátký).');
-        }
-        setLoading(false); // Ensure loading is reset after image processing
-      } else {
-        setUploadStatusMessage('⚠️ Nepodporovaný typ souboru. Nahrajte PDF nebo obrázek.');
-        setLoading(false);
-      }
-    } catch (error) {
-      console.error('Chyba při nahrávání souboru:', error);
-      setProcessedText('');
-      setUploadStatusMessage('⚠️ Nepodařilo se načíst soubor.');
-      setLoading(false);
-    }
-  };
-
-
+  // Function to convert File object to Base64 for OCR processing
   const convertFileToBase64 = (file) => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -134,36 +49,151 @@ export default function Home() {
     });
   };
 
-  // Handler specifically for camera capture
-  const handleCameraCapture = async (event) => {
+  // OCR function using Tesseract.js
+  const runOCR = async (imageBase64) => {
+    try {
+      const result = await Tesseract.recognize(imageBase64, 'ces'); // Use Czech language pack
+      return result.data.text;
+    } catch (error) {
+      console.error('Chyba při rozpoznávání textu (OCR):', error);
+      // Directly update the status message for OCR specific errors
+      setUploadStatusMessage('⚠️ Chyba při rozpoznávání textu (OCR): ' + error.message);
+      return ''; // Return empty string to indicate OCR failure for this image
+    }
+  };
+
+  // Consolidated handler for all file uploads (PDF and general images)
+  const handleFileUpload = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
 
     setLoading(true);
     setProcessedText(''); // Clear previous content
     setOutput(''); // Clear previous output
-    setUploadStatusMessage('Zpracovávám nahraný text. Chvíli to může trvat.'); // Set loading message
+    setUploadStatusMessage('Zpracovávám nahraný text. Chvíli to může trvat.'); // Initial general message
+
+    try {
+      if (file.type === 'application/pdf') {
+        const reader = new FileReader();
+        reader.onload = async () => {
+          let extractedFullText = '';
+          let specificErrorMessage = ''; // To store a more specific error message if OCR process itself fails
+
+          try {
+            // Attempt standard PDF text extraction
+            const loadingTask = pdfjsLib.getDocument({ data: reader.result });
+            const pdf = await loadingTask.promise;
+            for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+              const page = await pdf.getPage(pageNum);
+              const content = await page.getTextContent();
+              extractedFullText += content.items.map((item) => item.str).join(' ') + '\n';
+            }
+          } catch (stdPdfErr) {
+            // Standard PDF text extraction failed (e.g., scanned PDF), attempt OCR
+            console.warn('PDF standard text extraction failed, attempting OCR:', stdPdfErr);
+            setUploadStatusMessage('PDF neobsahuje čitelný text, zkouším OCR...'); // Intermediate message
+
+            try {
+              const images = await pdfToImages(file); // Converts PDF pages to images
+              if (!images || images.length === 0) {
+                // If pdfToImages returns no images, it's a conversion failure
+                throw new Error("Nepodařilo se převést PDF na obrázky pro OCR.");
+              }
+              for (const imageBase64 of images) {
+                // runOCR updates uploadStatusMessage directly on failure,
+                // so we don't re-set it here if it's an OCR specific error
+                extractedFullText += await runOCR(imageBase64) + '\n';
+              }
+            } catch (ocrProcessErr) {
+              // This catch handles errors from pdfToImages or unexpected errors during OCR loop
+              console.error('Error during PDF to Image conversion or OCR process:', ocrProcessErr);
+              specificErrorMessage = '⚠️ Chyba při převodu PDF na obrázky nebo při OCR: ' + ocrProcessErr.message;
+              extractedFullText = ''; // Clear text if OCR process itself failed
+            }
+          }
+
+          // Final check and status message after all attempts (standard or OCR)
+          if (extractedFullText.trim().length > 10) {
+            setProcessedText(extractedFullText);
+            setUploadStatusMessage('✅ Dokument úspěšně nahrán a zpracován.');
+          } else {
+            setProcessedText('');
+            // Prioritize specific error messages (from OCR process or runOCR)
+            if (specificErrorMessage) {
+              setUploadStatusMessage(specificErrorMessage);
+            } else if (uploadStatusMessage.includes('Chyba při rozpoznávání textu (OCR)')) {
+               // runOCR already set a specific error, keep it. No need to set new message.
+            } else {
+              setUploadStatusMessage('⚠️ Z dokumentu se nepodařilo rozpoznat žádný text (nebo je příliš krátký).');
+            }
+          }
+          setLoading(false); // Ensure loading is off
+        };
+        reader.readAsArrayBuffer(file);
+
+      } else if (file.type.startsWith('image/')) {
+        // Handle direct image uploads (e.g., JPEG, PNG)
+        const base64 = await convertFileToBase64(file);
+        const extractedText = await runOCR(base64);
+
+        if (extractedText.trim().length > 10) {
+          setProcessedText(extractedText);
+          setUploadStatusMessage('✅ Obrázek úspěšně nahrán a text rozpoznán.');
+        } else {
+          setProcessedText('');
+          // If runOCR already set a specific error message, keep it.
+          if (!uploadStatusMessage.includes('Chyba při rozpoznávání textu (OCR)')) {
+            setUploadStatusMessage('⚠️ Nerozpoznali jsme čitelný text z obrázku (nebo je příliš krátký).');
+          }
+        }
+        setLoading(false);
+
+      } else {
+        setUploadStatusMessage('⚠️ Nepodporovaný typ souboru. Nahrajte PDF nebo obrázek.');
+        setLoading(false);
+      }
+    } catch (outerError) {
+      console.error('Chyba při nahrávání souboru:', outerError);
+      setProcessedText('');
+      setUploadStatusMessage('⚠️ Nepodařilo se načíst soubor nebo došlo k vážné chybě.');
+      setLoading(false);
+    }
+  };
+
+  // Handler specifically for camera capture (mobile devices)
+  const handleCameraCapture = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    setLoading(true);
+    setProcessedText('');
+    setOutput('');
+    setUploadStatusMessage('Zpracovávám nahraný text. Chvíli to může trvat.');
 
     try {
       const base64 = await convertFileToBase64(file);
-      const extractedText = await runOCR(base64);
+      const extractedText = await runOCR(base64); // runOCR sets its own error message
 
       if (extractedText.trim().length > 10) {
-        setProcessedText(extractedText); // Set to processedText
-        setUploadStatusMessage('✅ Foto z kamery úspěšně nahráno a text rozpoznán.'); // Success message
+        setProcessedText(extractedText);
+        setUploadStatusMessage('✅ Foto z kamery úspěšně nahráno a text rozpoznán.');
       } else {
-        setProcessedText(''); // Clear if not enough text
-        setUploadStatusMessage("⚠️ Nerozpoznali jsme čitelný text z fotografie (nebo je příliš krátký)."); // No text found
+        setProcessedText('');
+        // If runOCR already set a specific error message, keep it.
+        if (!uploadStatusMessage.includes('Chyba při rozpoznávání textu (OCR)')) {
+          setUploadStatusMessage("⚠️ Nerozpoznali jsme čitelný text z fotografie (nebo je příliš krátký).");
+        }
       }
     } catch (err) {
       console.error('Chyba při načítání z kamery:', err);
-      setProcessedText(''); // Clear on error
-      setUploadStatusMessage('⚠️ Nepodařilo se načíst fotografii.'); // Error message
+      setProcessedText('');
+      setUploadStatusMessage('⚠️ Nepodařilo se načíst fotografii.');
     } finally {
       setLoading(false);
     }
   };
 
+  // Handles the submission of processed text to the API
   const handleSubmit = async () => {
     if (!selectedType) {
       setUploadStatusMessage('⚠️ Vyberte, čemu chcete rozumět – lékařskou zprávu nebo rozbor krve.');
@@ -180,6 +210,7 @@ export default function Home() {
     setUploadStatusMessage(''); // Clear messages before submission
 
     try {
+      // Define the prompt based on the selected document type
       const prompt = selectedType === 'zprava'
         ? `🛡️ Tento překlad slouží pouze k lepšímu pochopení obsahu lékařské zprávy a nenahrazuje konzultaci s lékařem.
 
@@ -274,6 +305,7 @@ export default function Home() {
     }
   };
 
+  // Clears all input and output fields
   const handleClear = () => {
     setProcessedText(''); // Clear the consolidated text
     setOutput('');
@@ -282,187 +314,224 @@ export default function Home() {
     setGdprChecked(false);
     setLoading(false);
     setSeconds(0);
-    // Optionally reset selectedType if you want:
-    // setSelectedType(null);
+    setSelectedType(null); // Reset selected type as well
   };
 
+  // Renders the structured output from the API response
   const renderStructuredOutput = () => {
     if (!output) return null;
-    // Keep this split method, but be aware of its coupling to the prompt's emojis.
-    // If you control the API, sending structured JSON from the backend is ideal.
-    const sections = output.split(/(?=\ud83c\udfe6|\ud83d\udc64|\ud83c\udd94|\ud83d\udcec|\ud83e\uddfe|\ud83d\udcc8|\ud83d\udccc|\ud83d\udce3|\ud83d\udccc)/g);
+    // Split output by specific emojis used in the prompt for structured display
+    const sections = output.split(/(?=\ud83c\udfe6|\ud83c\udfe5|\ud83d\udc64|\ud83d\udcc4|\ud83e\uddea|\ud83d\udcdc|\ud83e\udde0|\u26a0\ufe0f)/);
+    // Filter out empty strings from the split result
+    const filteredSections = sections.filter(section => section.trim() !== '');
+
     return (
-      <div className="bg-white border rounded shadow p-4 mb-4 whitespace-pre-wrap text-gray-800">
-        {sections.map((section, index) => (
-          <div key={index} className="mb-3">{section.trim()}</div>
-        ))}
+      <div className="bg-gray-50 border border-gray-200 p-6 rounded-lg shadow-md break-words whitespace-pre-wrap">
+        {filteredSections.map((section, index) => {
+          // Determine if section starts with an emoji, then display as a strong heading
+          if (section.startsWith('🏥') || section.startsWith('👤') || section.startsWith('📄') || section.startsWith('🧪') || section.startsWith('📋') || section.startsWith('🧠') || section.startsWith('⚠️') || section.startsWith('🛡️')) {
+            return (
+              <h3 key={index} className="text-lg font-semibold mt-4 mb-2 text-blue-700">
+                {section.trim()}
+              </h3>
+            );
+          }
+          return <p key={index} className="mb-2 text-gray-800 text-sm">{section.trim()}</p>;
+        })}
       </div>
     );
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col justify-between">
-      <main className="p-6 font-sans flex-grow flex items-center justify-center">
-        <div className="max-w-2xl w-full bg-white rounded-lg shadow-md p-8">
-          <h1 className="text-4xl font-bold mb-2 text-center text-gray-900">Lékař pro lidi</h1>
+    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
+      <div className="w-full max-w-2xl bg-white p-8 rounded-xl shadow-lg my-8">
+        <h1 className="text-4xl font-extrabold text-center text-blue-700 mb-4">Lékař pro lidi</h1>
+        <p className="mb-8 text-center text-gray-700 text-lg"> {/* Increased mb-4 to mb-8 */}
+          Lékařské zprávy jsou někdy oříškem i pro samotné lékaře. <br />
+          Proto jsem vytvořil nástroj, který vám je přeloží do srozumitelné lidské řeči, člověčiny.
+        </p>
 
-          <p className="mb-4 text-center text-gray-700 text-lg">
-            Lékařské zprávy jsou někdy oříškem i pro samotné lékaře. <br />
-            Proto jsem vytvořil nástroj, který vám je přeloží do srozumitelné lidské řeči, člověčiny.
+        {/* Jak to funguje? section */}
+        <div className="bg-blue-50 border-l-4 border-blue-400 text-blue-900 p-4 rounded shadow text-sm mb-8"> {/* Increased mb-6 to mb-8 */}
+          <p className="font-semibold mb-2">Jak to funguje?</p>
+          <ul className="list-disc list-inside space-y-1">
+            <li>Vyberte, zda se jedná o Lékařskou zprávu nebo Rozbor krve.</li>
+            <li>Vložte text z dokumentu do textového pole, nebo nahrajte PDF či fotografii.</li>
+            <li>Souhlaste s podmínkami GDPR a odeslání dat.</li>
+            <li>Klikněte na "Přelož do lidské řeči" a vyčkejte na překlad.</li>
+          </ul>
+          <p className="mt-2 text-xs text-blue-800">
+            Veškerý text je zpracováván AI modelem GPT-4o a není ukládán.
           </p>
-
-          <div className="bg-blue-50 border-l-4 border-blue-400 text-blue-900 p-4 rounded shadow text-sm mb-6">
-            <p className="font-semibold mb-2">Jak to funguje?</p>
-            <ol className="list-decimal ml-6 space-y-1">
-              <li>Vyberte, co chcete přeložit – lékařskou zprávu nebo rozbor krve.</li>
-              <li>Vložte text, nebo nahrajte dokument / fotku z mobilu.</li>
-              <li>Za pár sekund obdržíte srozumitelný výklad, kterému porozumí každý.</li>
-            </ol>
-          </div>
-
-          <div className="flex justify-center gap-4 mb-6">
-            <button
-              className={`px-4 py-2 rounded ${selectedType === 'zprava' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
-              onClick={() => setSelectedType('zprava')}
-              disabled={loading} // Disable type selection during loading
-            >
-              📄 Lékařská zpráva
-            </button>
-            <button
-              className={`px-4 py-2 rounded ${selectedType === 'rozbor' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
-              onClick={() => setSelectedType('rozbor')}
-              disabled={loading} // Disable type selection during loading
-            >
-              💉 Rozbor krve
-            </button>
-          </div>
-
-          {/* Conditional rendering of textarea based on whether content has been uploaded */}
-          {!hasContent && (
-            <textarea
-              placeholder="Sem vložte text..."
-              className="p-4 border border-gray-300 rounded bg-white shadow resize-none w-full mb-4"
-              rows={8}
-              value={processedText} // Now uses processedText for manual input too
-              onChange={(e) => setProcessedText(e.target.value)}
-              disabled={loading} // Disable manual input during loading
-            />
-          )}
-
-          {hasContent && (
-            <div className="bg-gray-100 border border-gray-300 rounded p-4 mb-4 text-gray-700 text-sm overflow-auto max-h-40">
-              <p className="font-semibold mb-2">Vložený/Rozpoznaný text:</p>
-              <pre className="whitespace-pre-wrap break-words">{processedText.substring(0, 500)}...</pre> {/* Show a preview */}
-              <p className="text-right text-gray-500">({processedText.length} znaků)</p>
-            </div>
-          )}
-
-          {/* New Button-based Upload Section */}
-          <div className="flex flex-col gap-4 mb-4">
-            {/* Button for PDF or Image Upload */}
-            <button
-              type="button"
-              className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-lg shadow-md transition duration-300 ease-in-out disabled:bg-gray-400 disabled:cursor-not-allowed"
-              onClick={() => fileUploadRef.current?.click()}
-              disabled={loading}
-            >
-              📂 Nahrát dokument (PDF nebo obrázek)
-            </button>
-            <input
-              type="file"
-              accept=".pdf,image/*" // Accept both PDF and any image
-              onChange={handleFileUpload} // This new combined handler
-              ref={fileUploadRef}
-              className="hidden" // Hide the input
-              disabled={loading}
-            />
-
-            {/* Button for Camera Capture */}
-            <button
-              type="button"
-              className="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg shadow-md transition duration-300 ease-in-out disabled:bg-gray-400 disabled:cursor-not-allowed"
-              onClick={() => cameraCaptureRef.current?.click()}
-              disabled={loading}
-            >
-              📷 Vyfotit dokument mobilem
-            </button>
-            <input
-              type="file"
-              accept="image/*"
-              capture="environment" // Forces camera on mobile
-              onChange={handleCameraCapture} // Dedicated camera handler
-              ref={cameraCaptureRef}
-              className="hidden" // Hide the input
-              disabled={loading}
-            />
-          </div>
-
-          {uploadStatusMessage && (
-            <div className={`p-3 rounded mb-4 text-sm ${
-              uploadStatusMessage.startsWith('✅') ? 'bg-green-100 text-green-800' : // Success message
-              (uploadStatusMessage.startsWith('⚠️') ? 'bg-red-100 text-red-800' : // Error/warning message
-              'bg-orange-100 text-orange-800') // Default for processing or other informational messages
-            }`}>
-              {uploadStatusMessage}
-            </div>
-          )}
-
-
-          <div className="bg-gray-50 rounded border p-4 mb-6 text-sm text-gray-700 space-y-2">
-            <label className="block">
-              <input type="checkbox" className="mr-2" checked={consentChecked} onChange={(e) => setConsentChecked(e.target.checked)} disabled={loading} />
-              Rozumím, že výstup není profesionální lékařská rada.
-            </label>
-            <label className="block">
-              <input type="checkbox" className="mr-2" checked={gdprChecked} onChange={(e) => setGdprChecked(e.target.checked)} disabled={loading} />
-              Souhlasím se zpracováním dat.
-            </label>
-          </div>
-
-          <div className="flex gap-4 mb-4">
-            <button
-              className={`flex-1 py-3 rounded-lg text-lg font-semibold transition shadow ${
-                consentChecked && gdprChecked && hasContent && !loading
-                  ? 'bg-blue-600 text-white hover:bg-blue-700'
-                  : 'bg-gray-400 text-white cursor-not-allowed'
-              }`}
-              onClick={handleSubmit}
-              disabled={!consentChecked || !gdprChecked || !hasContent || loading}
-            >
-              Přelož do lidské řeči
-            </button>
-
-            <button
-              className={`flex-1 py-3 rounded-lg text-lg font-semibold transition shadow ${
-                loading ? 'bg-gray-400 text-white cursor-not-allowed' : 'bg-gray-300 text-gray-800 hover:bg-gray-400'
-              }`}
-              onClick={handleClear}
-              disabled={loading}
-            >
-              Vymazat vše
-            </button>
-          </div>
-
-          {loading && (
-            <div className="flex flex-col items-center text-blue-600 text-sm mt-4">
-              <p className="mb-1">⏳ Překlad může trvat až 60 vteřin. Díky za trpělivost.</p>
-              <div className="flex items-center gap-2">
-                <span className="animate-spin">🔄</span>
-                <span>Zpracovávám... ({seconds}s)</span>
-              </div>
-            </div>
-          )}
-
-          {output && (
-            <div className="mt-10">
-              <h2 className="text-2xl font-semibold mb-4 text-gray-800">Výstup:</h2>
-              {renderStructuredOutput()}
-              <FeedbackForm />
-            </div>
-          )}
         </div>
-      </main>
 
+        {/* Document type selection */}
+        <p className="text-center text-gray-700 font-semibold mb-4">1. Vyberte typ dokumentu:</p>
+        <div className="flex justify-center gap-4 mb-8"> {/* Increased mb-6 to mb-8 */}
+          <button
+            className={`px-4 py-2 rounded-lg shadow-sm ${ /* Added rounded-lg shadow-sm */
+              selectedType === 'zprava' ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
+            }`}
+            onClick={() => setSelectedType('zprava')}
+            disabled={loading}
+          >
+            📄 Lékařská zpráva
+          </button>
+          <button
+            className={`px-4 py-2 rounded-lg shadow-sm ${ /* Added rounded-lg shadow-sm */
+              selectedType === 'rozbor' ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
+            }`}
+            onClick={() => setSelectedType('rozbor')}
+            disabled={loading}
+          >
+            💉 Rozbor krve
+          </button>
+        </div>
+
+        {/* Text input / preview area */}
+        <p className="text-center text-gray-700 font-semibold mb-4">2. Vložte text nebo nahrajte dokument:</p>
+        {!hasContent ? (
+          <textarea
+            placeholder="Sem vložte text ručně nebo nahrajte dokument pomocí tlačítek níže." // New placeholder
+            className="p-4 border border-gray-300 rounded-lg bg-white shadow-sm resize-none w-full mb-6" /* Added rounded-lg, shadow-sm, mb-6 */
+            rows={8}
+            value={processedText}
+            onChange={(e) => setProcessedText(e.target.value)}
+            disabled={loading}
+          />
+        ) : (
+          <div className="bg-gray-100 border border-gray-300 rounded-lg p-4 mb-6 text-gray-700 text-sm overflow-auto max-h-40 shadow-sm"> {/* Added rounded-lg, shadow-sm, mb-6 */}
+            <h3 className="font-semibold mb-2">Nahraný/vložený text:</h3>
+            <pre className="whitespace-pre-wrap text-wrap">{processedText}</pre>
+          </div>
+        )}
+
+        {/* Hidden file inputs */}
+        <input
+          type="file"
+          accept=".pdf,image/*"
+          onChange={handleFileUpload}
+          ref={fileUploadRef}
+          style={{ display: 'none' }}
+        />
+        <input
+          type="file"
+          accept="image/*"
+          capture="environment" // Suggests front or rear camera
+          onChange={handleCameraCapture}
+          ref={cameraCaptureRef}
+          style={{ display: 'none' }}
+        />
+
+        {/* Upload buttons */}
+        <div className="flex flex-col gap-4 mb-6"> {/* Increased mb-4 to mb-6 */}
+          <button
+            className="bg-blue-500 text-white py-3 rounded-lg text-lg font-semibold hover:bg-blue-600 transition shadow-md"
+            onClick={() => fileUploadRef.current.click()}
+            disabled={loading}
+          >
+            Nahrát dokument (PDF/Obrázek)
+          </button>
+          <button
+            className="bg-blue-500 text-white py-3 rounded-lg text-lg font-semibold hover:bg-blue-600 transition shadow-md"
+            onClick={() => cameraCaptureRef.current.click()}
+            disabled={loading}
+          >
+            Vyfotit dokument mobilem
+          </button>
+        </div>
+
+        {/* Status message display */}
+        {uploadStatusMessage && (
+          <div className={`p-3 rounded-lg mb-6 text-sm ${ /* Added rounded-lg, mb-6 */
+            uploadStatusMessage.startsWith('✅') ? 'bg-green-100 text-green-800' :
+            (uploadStatusMessage.startsWith('⚠️') ? 'bg-red-100 text-red-800' :
+            'bg-orange-100 text-orange-800')
+          }`}>
+            {uploadStatusMessage}
+          </div>
+        )}
+
+        {/* Consent checkboxes */}
+        <p className="text-center text-gray-700 font-semibold mb-4">3. Souhlas s podmínkami:</p>
+        <div className="mb-6 space-y-2"> {/* Increased mb-4 to mb-6 */}
+          <label className="flex items-center text-gray-700 text-sm">
+            <input
+              type="checkbox"
+              className="form-checkbox h-4 w-4 text-blue-600 mr-2"
+              checked={consentChecked}
+              onChange={(e) => setConsentChecked(e.target.checked)}
+              disabled={loading}
+            />
+            Souhlasím s podmínkami užití a odesláním dat k překladu do AI modelu.
+          </label>
+          <label className="flex items-center text-gray-700 text-sm">
+            <input
+              type="checkbox"
+              className="form-checkbox h-4 w-4 text-blue-600 mr-2"
+              checked={gdprChecked}
+              onChange={(e) => setGdprChecked(e.target.checked)}
+              disabled={loading}
+            />
+            Souhlasím se zpracováním osobních údajů v souladu s GDPR. Data nejsou ukládána.
+          </label>
+        </div>
+
+        {/* Submit and Clear buttons */}
+        <div className="flex gap-4 mb-4">
+          <button
+            className={`flex-1 py-3 rounded-lg text-lg font-semibold transition shadow ${ /* Changed shadow to shadow-md if you want consistency with upload buttons */
+              consentChecked && gdprChecked && hasContent && !loading
+                ? 'bg-blue-600 text-white hover:bg-blue-700'
+                : 'bg-gray-400 text-white cursor-not-allowed'
+            }`}
+            onClick={handleSubmit}
+            // Disabled if no type selected, no content, consents not checked, or loading
+            disabled={!selectedType || !consentChecked || !gdprChecked || !hasContent || loading}
+          >
+            {/* Conditional content for loading spinner */}
+            {loading ? (
+              <span className="flex items-center justify-center">
+                <span className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></span>
+                Překládám...
+              </span>
+            ) : (
+              'Přelož do lidské řeči'
+            )}
+          </button>
+
+          {/* "Vymazat vše" button with refined style */}
+          <button
+            className={`flex-1 py-3 rounded-lg text-lg font-semibold transition shadow-sm ${
+              loading ? 'bg-gray-400 text-white cursor-not-allowed' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+            onClick={handleClear}
+            disabled={loading}
+          >
+            Vymazat vše
+          </button>
+        </div>
+
+        {/* Loading indicator for translation */}
+        {loading && (
+          <div className="flex flex-col items-center text-blue-600 text-sm mt-4">
+            <p className="mb-1">⏳ Překlad může trvat až 60 vteřin. Díky za trpělivost.</p>
+            <div className="flex items-center gap-2">
+              <span className="animate-spin">🔄</span>
+              <span>Zpracovávám... ({seconds}s)</span>
+            </div>
+          </div>
+        )}
+
+        {/* Output section */}
+        {output && (
+          <div className="mt-10">
+            <h2 className="text-2xl font-semibold mb-4 text-gray-800">Výstup:</h2>
+            {renderStructuredOutput()}
+            <FeedbackForm />
+          </div>
+        )}
+      </div>
       <Footer />
     </div>
   );
