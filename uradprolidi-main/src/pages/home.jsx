@@ -360,6 +360,19 @@ export default function Home() {
             <li>Souhlaste s podmínkami.</li>
             <li>Klikněte na "Přelož do lidské řeči" a vyčkejte na překlad.</li>
           </ul>
+          
+                    {/* START OF GOOGLE AD UNIT */}
+          {/* IMPORTANT: Replace YOUR_AD_CLIENT_ID and YOUR_AD_SLOT_ID with your actual AdSense IDs */}
+          <div className="my-4 flex justify-center"> {/* Added a div for centering and spacing */}
+              <ins className="adsbygoogle"
+                   style={{ display: 'block', textAlign: 'center' }}
+                   data-ad-layout="in-article"
+                   data-ad-format="fluid"
+                   data-ad-client="ca-pub-YOUR_AD_CLIENT_ID" // Replace with your AdSense Client ID (e.g., ca-pub-1234567890123456)
+                   data-ad-slot="YOUR_AD_SLOT_ID"></ins> {/* Replace with your AdSense Ad Slot ID (e.g., 1234567890) */}
+          </div>
+          {/* END OF GOOGLE AD UNIT */}
+          
         </div>
 
         {/* Document type selection */}
