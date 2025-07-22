@@ -32,12 +32,11 @@ export default function Home() {
     return () => clearInterval(timer);
   }, [loading]);
 
- const handlePDFUpload = (event) => {
+const handlePDFUpload = (event) => {
   const file = event.target.files[0];
   if (!file) return;
 
   const isPDF = file.type === 'application/pdf';
-  const isImage = file.type.startsWith('image/');
 
   if (isPDF) {
     const reader = new FileReader();
@@ -53,16 +52,21 @@ export default function Home() {
           fullText += content.items.map((item) => item.str).join(' ') + '\n';
         }
 
-        if (fullText.trim().length > 10) {
-          // Readable PDF → send as text
+        if (fullText.trim().length > 20) {
+          // ✅ PDF obsahuje text – rovnou uložíme
           setPdfText(fullText);
           setUploadSuccess(true);
         } else {
-          // Image-based PDF → convert to images
+          // ❌ PDF neobsahuje text → převedeme na obrázky → spustíme OCR
           try {
             const images = await pdfToImages(file);
             if (images.length > 0) {
-              setInputText(images); // Array of base64 images
+              let ocrText = '';
+              for (const img of images) {
+                const result = await Tesseract.recognize(img, 'ces');
+                ocrText += result.data.text + '\n';
+              }
+              setPdfText(ocrText);
               setUploadSuccess(true);
             } else {
               alert('⚠️ PDF nelze přečíst ani převést na obrázek.');
@@ -72,7 +76,6 @@ export default function Home() {
             alert('⚠️ Chyba při zpracování PDF.');
           }
         }
-
       } catch (error) {
         console.error("Chyba při zpracování PDF:", error);
         alert('⚠️ Chyba při čtení PDF. Ujistěte se, že soubor je čitelný.');
@@ -80,22 +83,7 @@ export default function Home() {
     };
     reader.readAsArrayBuffer(file);
   }
-
-    else if (isImage) {
-      const reader = new FileReader();
-      reader.onload = async () => {
-        try {
-          const imageBase64 = reader.result;
-          setInputText(imageBase64); // This triggers GPT-4 Vision
-          setUploadSuccess(true);
-        } catch (err) {
-          console.error('Chyba při načítání obrázku:', err);
-          alert('⚠️ Nepodařilo se načíst obrázek. Zkuste jiný soubor.');
-        }
-      };
-      reader.readAsDataURL(file);
-    }
-   };
+};
 
        const convertFileToBase64 = (file) => {
         return new Promise((resolve, reject) => {
