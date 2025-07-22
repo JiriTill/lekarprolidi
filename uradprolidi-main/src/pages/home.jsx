@@ -1,133 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import * as pdfjsLib from 'pdfjs-dist/build/pdf';
-import FeedbackForm from '../components/FeedbackForm';
-import { Link } from 'react-router-dom';
-import Footer from '../components/Footer';
-import { pdfToImages } from '../utils/pdfToImages';
-import Tesseract from 'tesseract.js';
-
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`;
-
-export default function Home() {
-  const [inputText, setInputText] = useState('');
-  const [output, setOutput] = useState('');
-  const [pdfText, setPdfText] = useState('');
-  const [uploadSuccess, setUploadSuccess] = useState(false);
-  const [cameraUploadSuccess, setCameraUploadSuccess] = useState(false);
-  const [consentChecked, setConsentChecked] = useState(false);
-  const [gdprChecked, setGdprChecked] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [seconds, setSeconds] = useState(0);
-  const [selectedType, setSelectedType] = useState(null);
-  const isImageInput =
-  typeof inputText === 'string' && inputText.startsWith('data:image/');
-  const finalInput = isImageInput ? inputText : (pdfText || inputText);
-  const [ocrText, setOcrText] = useState('');
-
-  useEffect(() => {
-    let timer;
-    if (loading) {
-      timer = setInterval(() => setSeconds((s) => s + 1), 1000);
-    } else {
-      clearInterval(timer);
-      setSeconds(0);
-    }
-    return () => clearInterval(timer);
-  }, [loading]);
-  
-  const runOCR = async (imageBase64) => {
-  try {
-    const result = await Tesseract.recognize(imageBase64, 'ces'); // čeština
-    return result.data.text;
-  } catch (error) {
-    console.error('Chyba při OCR:', error);
-    return '';
-  }
-};
-
-        const handlePDFUpload = async (event) => {
-          const file = event.target.files[0];
-          if (!file) return;
-        
-          setLoading(true);
-        
-          try {
-            const isPDF = file.type === 'application/pdf';
-            if (!isPDF) {
-              alert('⚠️ Soubor není PDF.');
-              setLoading(false);
-              return;
-            }
-        
-            const reader = new FileReader();
-            reader.onload = async () => {
-              try {
-                let pdf;
-                try {
-                  const loadingTask = pdfjsLib.getDocument({ data: reader.result });
-                  pdf = await loadingTask.promise;
-                } catch (err) {
-                  console.warn('PDF nešlo přečíst standardní cestou, zkouším OCR:', err);
-                  const images = await pdfToImages(file);
-                  let combinedOCRText = '';
-        
-                  for (const imageBase64 of images) {
-                    const textFromImage = await runOCR(imageBase64);
-                    combinedOCRText += textFromImage + '\n';
-                  }
-        
-                  if (combinedOCRText.trim().length > 10) {
-                    setPdfText(combinedOCRText);
-                    setUploadSuccess(true);
-                  } else {
-                    alert('⚠️ OCR nedokázalo z PDF nic rozpoznat.');
-                  }
-        
-                  setLoading(false);
-                  return; // ⬅️ Ukončíme funkci, dál už nepokračujeme
-                }
-        
-                // klasické čtení textu ze stránek
-                let fullText = '';
-        
-                for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-                  const page = await pdf.getPage(pageNum);
-                  const content = await page.getTextContent();
-                  fullText += content.items.map((item) => item.str).join(' ') + '\n';
-                }
-        
-                if (fullText.trim().length > 10) {
-                  setPdfText(fullText);
-                  setUploadSuccess(true);
-                } else {
-                  alert('⚠️ PDF neobsahovalo čitelný text.');
-                }
-        
-              } catch (err) {
-                console.error('Chyba při čtení nebo OCR PDF:', err);
-                alert('⚠️ Chyba při zpracování PDF.');
-              } finally {
-                setLoading(false);
-              }
-            };
-        
-            reader.readAsArrayBuffer(file);
-          } catch (error) {
-            console.error('Chyba při čtení PDF:', error);
-            alert('⚠️ Nepodařilo se načíst PDF.');
-            setLoading(false);
-          }
-        };
+if (!inputText && !pdfText && !ocrText) {
+  alert('⚠️ Nezadal jsi žádný text ani nenahrál dokument.');
+  return;
+}
 
 
-       const convertFileToBase64 = (file) => {
-        return new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.readAsDataURL(file);
-          reader.onload = () => resolve(reader.result);
-          reader.onerror = (error) => reject(error);
-        });
-      };
+
+
       
       const handleImageUpload = async (event) => {
         const file = event.target.files[0];
@@ -147,50 +25,72 @@ export default function Home() {
                 setLoading(false); // ✅ Tady má být
       }
     };
+ const handleImageUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    setLoading(true);
+    try {
+      const base64 = await convertFileToBase64(file);
+      const extractedText = await runOCR(base64);
+      setOcrText(extractedText);
+      setUploadSuccess(true);
+    } catch (err) {
+      console.error('Chyba při načítání obrázku:', err);
+      alert('⚠️ Nepodařilo se načíst obrázek.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  const handleCameraCapture = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    setLoading(true);
+    try {
+      const base64 = await convertFileToBase64(file);
+      const extractedText = await runOCR(base64);
+      if (!extractedText || extractedText.trim().length < 10) {
+        alert('⚠️ Nerozpoznali jsme čitelný text.');
+        return;
+      }
+      setOcrText(extractedText);
+      setCameraUploadSuccess(true);
+    } catch (err) {
+      console.error('Chyba při načítání z kamery:', err);
+      alert('⚠️ Nepodařilo se načíst fotografii.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleClear = () => {
+    setInputText('');
+    setOutput('');
+    setPdfText('');
+    setOcrText('');
+    setUploadSuccess(false);
+    setCameraUploadSuccess(false);
+    setConsentChecked(false);
+    setGdprChecked(false);
+    setLoading(false);
+    setSeconds(0);
+  };
+
+      const handleSubmit = async () => {
+          if (!selectedType) {
+            alert('⚠️ Vyberte, co chcete přeložit (zpráva nebo rozbor).');
+            return;
+          }
       
-          const handleCameraCapture = async (event) => {
-            const file = event.target.files[0];
-            if (!file) return;
-          
-            setLoading(true);
-          
-            try {
-              const base64 = await convertFileToBase64(file);
-              const extractedText = await runOCR(base64);
-          
-              if (!extractedText || extractedText.trim().length < 10) {
-                alert("⚠️ Nerozpoznali jsme čitelný text.");
-                return;
-              }
-          
-              setOcrText(extractedText);
-              setCameraUploadSuccess(true);
-          
-            } catch (err) {
-              console.error('Chyba při načítání z kamery:', err);
-              alert('⚠️ Nepodařilo se načíst fotografii.');
-            } finally {
-              setLoading(false);
-            }
-          };
-
-    const handleSubmit = async () => {
-      if (!selectedType) {
-        alert('⚠️ Vyberte, čemu chcete rozumět – lékařskou zprávu nebo rozbor krve.');
-        return;
-      }
-    
-      if (!inputText && !pdfText && !ocrText) {
-        alert('⚠️ Nezadal jsi žádný text ani nenahrál dokument.');
-        return;
-      }
-          
-      setLoading(true);
-      setOutput('');
-    
-      try {
-        const prompt = selectedType === 'zprava'
+          if (!finalInput || finalInput.length < 10) {
+            alert('⚠️ Text je příliš krátký nebo chybí.');
+            return;
+          }
+      
+          setLoading(true);
+          setOutput('');
+      
+          const prompt = selectedType === 'zprava'
           ? `🛡️ Tento překlad slouží pouze k lepšímu pochopení obsahu lékařské zprávy a nenahrazuje konzultaci s lékařem.
 
                       Přelož následující lékařskou zprávu nebo zdravotní dokument (např. výpis z vyšetření, propouštěcí zprávu, zprávu od specialisty) do jednoduché, srozumitelné češtiny vhodné pro běžného člověka bez lékařského vzdělání.
