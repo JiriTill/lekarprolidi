@@ -1,5 +1,4 @@
-// home (1).jsx
-import React, { useState, useEffect, useRef, useCallback } from 'react'; // Added useCallback
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import FeedbackForm from '../components/FeedbackForm';
 import { Link } from 'react-router-dom';
 import Footer from '../components/Footer';
@@ -22,24 +21,25 @@ const Home = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [seconds, setSeconds] = useState(0);
     const [selectedType, setSelectedType] = useState(null);
-    const [isTesseractReady, setIsTesseractReady] = useState(false); // Changed initial state to false
-    const [worker, setWorker] = useState(null); // State to hold the Tesseract worker instance
+    const [isTesseractReady, setIsTesseractReady] = useState(false); // <--- CHANGE THIS TO FALSE
+    const [worker, setWorker] = useState(null); // <--- ADD THIS STATE FOR WORKER
 
     // Refs for hidden file input elements
     const fileUploadRef = useRef(null);
     const cameraCaptureRef = useRef(null);
 
-    // Effect to initialize Tesseract.js worker
+    // Effect to initialize Tesseract.js worker <--- THIS ENTIRE useEffect BLOCK IS CRUCIAL
     useEffect(() => {
         const loadTesseractWorker = async () => {
             setStatusMessage('Načítám OCR engine...');
             setIsTesseractReady(false); // Ensure false until fully ready
+            console.log('Attempting to create Tesseract worker...'); // Added for debugging
             try {
                 // Ensure workerPath and corePath are correct relative to public/
                 const newWorker = await createWorker({
                     logger: m => {
                         // Log Tesseract.js progress for debugging
-                        console.log(m);
+                        console.log('Tesseract Logger:', m); // KEEP THIS, IT'S VERY USEFUL
                         if (m.status === 'recognizing text') {
                             setStatusMessage(`📷 Rozpoznávám text: ${Math.round(m.progress * 100)}%`);
                         } else if (m.status === 'loading tesseract core' || m.status === 'loading language traineddata') {
@@ -52,9 +52,14 @@ const Home = () => {
                     corePath: '/tesseract-data/tesseract-core.wasm.js', // Path to tesseract-core.wasm.js
                 });
 
+                console.log('Worker created, attempting to load...'); // Added for debugging
                 await newWorker.load();
+                console.log('Worker loaded, attempting to load language...'); // Added for debugging
                 await newWorker.loadLanguage('eng'); // Load English language, as specified in your runOCR function
+                console.log('Language loaded, attempting to initialize...'); // Added for debugging
                 await newWorker.initialize('eng');
+                console.log('Tesseract worker fully initialized.'); // Added for debugging
+
                 setWorker(newWorker);
                 setIsTesseractReady(true);
                 setStatusMessage('OCR engine připraven.');
@@ -85,7 +90,7 @@ const Home = () => {
         });
     };
 
-    // OCR function using the initialized Tesseract.js worker
+    // OCR function using the initialized Tesseract.js worker <--- MODIFIED runOCR
     const runOCR = async (imageBase64) => {
         if (!worker) { // Ensure the worker is initialized before attempting OCR
             console.error("Tesseract worker is not initialized.");
@@ -95,7 +100,7 @@ const Home = () => {
         try {
             setStatusMessage('📷 Spouštím rozpoznávání textu (OCR)...');
             // Use the initialized worker instance
-            const result = await worker.recognize(imageBase64);
+            const result = await worker.recognize(imageBase64); // <--- Use worker.recognize
             setStatusMessage('');
             return result.data.text;
         } catch (error) {
@@ -146,6 +151,7 @@ const Home = () => {
                                 throw new Error("Nepodařilo se převést PDF na obrázky pro OCR.");
                             }
                             for (const imageBase64 of images) {
+                                // Use the runOCR function that uses the worker
                                 extractedFullText += await runOCR(imageBase64) + '\n';
                             }
                         } catch (ocrProcessErr) {
@@ -174,6 +180,7 @@ const Home = () => {
 
             } else if (file.type.startsWith('image/')) {
                 const base64 = await convertFileToBase64(file);
+                // Use the runOCR function that uses the worker
                 const extractedText = await runOCR(base64);
 
                 if (extractedText.trim().length > 10) {
@@ -217,6 +224,7 @@ const Home = () => {
 
         try {
             const base64 = await convertFileToBase64(file);
+            // Use the runOCR function that uses the worker
             const extractedText = await runOCR(base64);
 
             if (extractedText.trim().length > 10) {
@@ -496,7 +504,7 @@ const Home = () => {
                         (statusMessage.startsWith('⚠️') ? 'bg-red-100 text-red-800 border border-red-200' :
                         'bg-blue-100 text-blue-800 border border-blue-200') // General processing messages
                     }`}>
-                        {(isLoading || !isTesseractReady && statusMessage.includes('Načítám OCR engine')) && isProcessingMessage(statusMessage) && (
+                        {(isLoading || (!isTesseractReady && statusMessage.includes('Načítám OCR engine'))) && isProcessingMessage(statusMessage) && (
                             <span className="animate-spin text-xl">🔄</span>
                         )}
                         <span>{statusMessage}</span>
