@@ -4,7 +4,20 @@ import FeedbackForm from '../components/FeedbackForm';
 import { Link } from 'react-router-dom';
 import Footer from '../components/Footer';
 import { pdfToImages } from '../utils/pdfToImages';
-import Tesseract from 'tesseract.js';
+import * as Tesseract from 'tesseract.js';
+// ... další importy
+// ...
+
+// Globální nastavení cest pro Tesseract.js
+Tesseract.setWorkerPath('/tesseract-data/worker.min.js'); // Cesta k hlavnímu workeru, kterou jste již měl stáhnout
+Tesseract.setLangPath('/tesseract-data/'); // Cesta ke složce s jazykovými daty (kde je ces.traineddata.gz)
+
+// Většinou není potřeba explicitně nastavovat setCorePath s worker.min.js,
+// ale pokud byste měl problémy, můžete zkusit stáhnout tesseract-core.wasm.js
+// z UNPKG (https://unpkg.com/tesseract.js@6.0.1/dist/) a přidat:
+// Tesseract.setCorePath('/tesseract-data/tesseract-core.wasm.js');
+
+// ... zbytek vašeho kódu pro komponentu home.jsx
 
 // Configure PDF.js worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = `/pdfjs/pdf.worker.mjs`;
