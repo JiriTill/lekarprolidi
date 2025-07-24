@@ -51,8 +51,8 @@ const Home = () => {
                 workerInstance = Tesseract.createWorker({
                     workerPath: '/tesseract-data/worker.min.js',
                     langPath: '/tesseract-data/',
-                    corePath: '/tesseract-data/tesseract-core.wasm.js',
-                    logLevel: 'debug', // <-- ENABLED DEBUG LOGGING
+                    corePath: '/tesseract-data/tesseract-core.wasm',
+                    logLevel: 'debug',
                 });
 
                 await workerInstance.load();
