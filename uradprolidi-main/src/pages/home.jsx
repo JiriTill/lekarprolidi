@@ -21,8 +21,8 @@ const Home = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [seconds, setSeconds] = useState(0);
     const [selectedType, setSelectedType] = useState(null);
-    const [isTesseractReady, setIsTesseractReady] = useState(false); // <--- CHANGE THIS TO FALSE
-    const [worker, setWorker] = useState(null); // <--- ADD THIS STATE FOR WORKER
+    const [isTesseractReady, setIsTesseractReady] = useState(false); // <--- THIS MUST BE FALSE
+    const [worker, setWorker] = useState(null); // <--- THIS MUST BE PRESENT
 
     // Refs for hidden file input elements
     const fileUploadRef = useRef(null);
@@ -33,13 +33,11 @@ const Home = () => {
         const loadTesseractWorker = async () => {
             setStatusMessage('Načítám OCR engine...');
             setIsTesseractReady(false); // Ensure false until fully ready
-            console.log('Attempting to create Tesseract worker...'); // Added for debugging
+            console.log('Attempting to create Tesseract worker...');
             try {
-                // Ensure workerPath and corePath are correct relative to public/
                 const newWorker = await createWorker({
                     logger: m => {
-                        // Log Tesseract.js progress for debugging
-                        console.log('Tesseract Logger:', m); // KEEP THIS, IT'S VERY USEFUL
+                        console.log('Tesseract Logger:', m);
                         if (m.status === 'recognizing text') {
                             setStatusMessage(`📷 Rozpoznávám text: ${Math.round(m.progress * 100)}%`);
                         } else if (m.status === 'loading tesseract core' || m.status === 'loading language traineddata') {
@@ -48,17 +46,17 @@ const Home = () => {
                             setStatusMessage('Inicializuji OCR engine...');
                         }
                     },
-                    workerPath: '/tesseract-data/worker.min.js', // Path to worker.min.js
-                    corePath: '/tesseract-data/tesseract-core.wasm.js', // Path to tesseract-core.wasm.js
+                    workerPath: '/tesseract-data/worker.min.js',
+                    corePath: '/tesseract-data/tesseract-core.wasm.js',
                 });
 
-                console.log('Worker created, attempting to load...'); // Added for debugging
+                console.log('Worker created, attempting to load...');
                 await newWorker.load();
-                console.log('Worker loaded, attempting to load language...'); // Added for debugging
-                await newWorker.loadLanguage('eng'); // Load English language, as specified in your runOCR function
-                console.log('Language loaded, attempting to initialize...'); // Added for debugging
+                console.log('Worker loaded, attempting to load language...');
+                await newWorker.loadLanguage('eng');
+                console.log('Language loaded, attempting to initialize...');
                 await newWorker.initialize('eng');
-                console.log('Tesseract worker fully initialized.'); // Added for debugging
+                console.log('Tesseract worker fully initialized.');
 
                 setWorker(newWorker);
                 setIsTesseractReady(true);
@@ -99,8 +97,7 @@ const Home = () => {
         }
         try {
             setStatusMessage('📷 Spouštím rozpoznávání textu (OCR)...');
-            // Use the initialized worker instance
-            const result = await worker.recognize(imageBase64); // <--- Use worker.recognize
+            const result = await worker.recognize(imageBase64); // <--- USE THE WORKER INSTANCE
             setStatusMessage('');
             return result.data.text;
         } catch (error) {
@@ -151,7 +148,6 @@ const Home = () => {
                                 throw new Error("Nepodařilo se převést PDF na obrázky pro OCR.");
                             }
                             for (const imageBase64 of images) {
-                                // Use the runOCR function that uses the worker
                                 extractedFullText += await runOCR(imageBase64) + '\n';
                             }
                         } catch (ocrProcessErr) {
@@ -180,7 +176,6 @@ const Home = () => {
 
             } else if (file.type.startsWith('image/')) {
                 const base64 = await convertFileToBase64(file);
-                // Use the runOCR function that uses the worker
                 const extractedText = await runOCR(base64);
 
                 if (extractedText.trim().length > 10) {
@@ -224,7 +219,6 @@ const Home = () => {
 
         try {
             const base64 = await convertFileToBase64(file);
-            // Use the runOCR function that uses the worker
             const extractedText = await runOCR(base64);
 
             if (extractedText.trim().length > 10) {
@@ -356,7 +350,7 @@ const Home = () => {
         setIsLoading(false);
         setSeconds(0);
         setSelectedType(null); // Reset selected type as well
-        // setErrorMessage(null); // No longer needed as it's handled by statusMessage
+        // setErrorMessage(null); // This line was commented out in previous versions
     };
 
     // Renders the structured output from the API response
@@ -587,5 +581,7 @@ const Home = () => {
         </div>
     );
 }
+
+export default Home;
 
 export default Home;
