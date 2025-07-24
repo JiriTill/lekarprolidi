@@ -20,6 +20,7 @@ const Home = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [seconds, setSeconds] = useState(0);
     const [selectedType, setSelectedType] = useState(null);
+    const [isTesseractReady, setIsTesseractReady] = useState(true);
 
     // Refs for hidden file input elements
     const fileUploadRef = useRef(null);
