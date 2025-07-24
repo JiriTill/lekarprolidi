@@ -220,9 +220,6 @@ export default function Home() {
                     🏥 Oddělení / specializace:
                     (např. neurologie, urologie; pokud není uvedeno, napiš „Není uvedeno“)
 
-                    👤 Kdo je pacient:
-                    (věk, pohlaví, důvod návštěvy – pokud není uvedeno, napiš „Informace chybí“)
-
                     📄 Co se zjistilo:
                     (stručně popiš hlavní zjištění ze zprávy, co bylo pozorováno)
 
@@ -315,7 +312,7 @@ export default function Home() {
                     // Determine if section starts with an emoji, then display as a strong heading
                     if (section.startsWith('🏥') || section.startsWith('👤') || section.startsWith('📄') || section.startsWith('🧪') || section.startsWith('📋') || section.startsWith('🧠') || section.startsWith('⚠️') || section.startsWith('🛡️')) {
                         return (
-                            <h3 key={index} className="text-lg font-medium mt-4 mb-2 text-neutral-800">
+                            <h3 key={index} className="text-lg mt-4 mb-2 text-neutral-800">
                                 {section.trim()}
                             </h3>
                         );
