@@ -11,7 +11,9 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs
 
 export default function Home() {
     // Consolidated state for all text content (manual input, PDF, OCR)
-    const [processedText, setProcessedText] = useState('');
+    const [processedText, setProcessedText] = useState(''); // This will be the text sent to API
+    const [isFromFileUpload, setIsFromFileUpload] = useState(false); // New state to track source of processedText for UI display
+
     const [output, setOutput] = useState('');
     const [uploadStatusMessage, setUploadStatusMessage] = useState('');
     const [consentChecked, setConsentChecked] = useState(false);
@@ -19,9 +21,6 @@ export default function Home() {
     const [loading, setLoading] = useState(false);
     const [seconds, setSeconds] = useState(0);
     const [selectedType, setSelectedType] = useState(null);
-
-    // Derived state: checks if there's any content to process
-    const hasContent = processedText.trim().length > 0;
 
     // Refs for hidden file input elements
     const fileUploadRef = useRef(null);
@@ -68,7 +67,8 @@ export default function Home() {
         if (!file) return;
 
         setLoading(true);
-        setProcessedText(''); // Clear previous content
+        setProcessedText(''); // Clear previous content (important for handleSubmit)
+        setIsFromFileUpload(false); // Reset for new upload process
         setOutput(''); // Clear previous output
         setUploadStatusMessage('Zpracovávám nahraný text. Chvíli to může trvat.'); // Initial general message
 
@@ -115,9 +115,11 @@ export default function Home() {
                     // Final check and status message after all attempts (standard or OCR)
                     if (extractedFullText.trim().length > 10) {
                         setProcessedText(extractedFullText);
+                        setIsFromFileUpload(true); // Indicate that processedText came from a file
                         setUploadStatusMessage('✅ Dokument úspěšně nahrán a zpracován.');
                     } else {
                         setProcessedText('');
+                        setIsFromFileUpload(false); // No valid text from file
                         // Prioritize specific error messages (from OCR process or runOCR)
                         if (specificErrorMessage) {
                             setUploadStatusMessage(specificErrorMessage);
@@ -138,9 +140,11 @@ export default function Home() {
 
                 if (extractedText.trim().length > 10) {
                     setProcessedText(extractedText);
+                    setIsFromFileUpload(true); // Indicate that processedText came from a file
                     setUploadStatusMessage('✅ Obrázek úspěšně nahrán a text rozpoznán.');
                 } else {
                     setProcessedText('');
+                    setIsFromFileUpload(false); // No valid text from file
                     // If runOCR already set a specific error message, keep it.
                     if (!uploadStatusMessage.includes('Chyba při rozpoznávání textu (OCR)')) {
                         setUploadStatusMessage('⚠️ Nerozpoznali jsme čitelný text z obrázku (nebo je příliš krátký).');
@@ -155,6 +159,7 @@ export default function Home() {
         } catch (outerError) {
             console.error('Chyba při nahrávání souboru:', outerError);
             setProcessedText('');
+            setIsFromFileUpload(false); // No valid text from file
             setUploadStatusMessage('⚠️ Nepodařilo se načíst soubor nebo došlo k vážné chybě.');
             setLoading(false);
         }
@@ -167,6 +172,7 @@ export default function Home() {
 
         setLoading(true);
         setProcessedText('');
+        setIsFromFileUpload(false); // Reset for new capture process
         setOutput('');
         setUploadStatusMessage('Zpracovávám nahraný text. Chvíli to může trvat.');
 
@@ -176,9 +182,11 @@ export default function Home() {
 
             if (extractedText.trim().length > 10) {
                 setProcessedText(extractedText);
+                setIsFromFileUpload(true); // Indicate that processedText came from a file
                 setUploadStatusMessage('✅ Foto z kamery úspěšně nahráno a text rozpoznán.');
             } else {
                 setProcessedText('');
+                setIsFromFileUpload(false); // No valid text from file
                 // If runOCR already set a specific error message, keep it.
                 if (!uploadStatusMessage.includes('Chyba při rozpoznávání textu (OCR)')) {
                     setUploadStatusMessage("⚠️ Nerozpoznali jsme čitelný text z fotografie (nebo je příliš krátký).");
@@ -187,6 +195,7 @@ export default function Home() {
         } catch (err) {
             console.error('Chyba při načítání z kamery:', err);
             setProcessedText('');
+            setIsFromFileUpload(false); // No valid text from file
             setUploadStatusMessage('⚠️ Nepodařilo se načíst fotografii.');
         } finally {
             setLoading(false);
@@ -200,7 +209,7 @@ export default function Home() {
             return;
         }
 
-        if (!processedText) {
+        if (!processedText) { // processedText now holds either manual input or file extracted text
             setUploadStatusMessage('⚠️ Nezadal jsi žádný text ani nenahrál dokument.');
             return;
         }
@@ -308,6 +317,7 @@ export default function Home() {
     // Clears all input and output fields
     const handleClear = () => {
         setProcessedText(''); // Clear the consolidated text
+        setIsFromFileUpload(false); // Reset file upload indicator
         setOutput('');
         setUploadStatusMessage(''); // Clear any upload status messages
         setConsentChecked(false);
@@ -331,12 +341,12 @@ export default function Home() {
                     // Determine if section starts with an emoji, then display as a strong heading
                     if (section.startsWith('🏥') || section.startsWith('👤') || section.startsWith('📄') || section.startsWith('🧪') || section.startsWith('📋') || section.startsWith('🧠') || section.startsWith('⚠️') || section.startsWith('🛡️')) {
                         return (
-                            <h3 key={index} className="text-lg font-semibold mt-4 mb-2 text-blue-700">
+                            <h3 key={index} className="text-lg font-medium mt-4 mb-2 text-neutral-800"> {/* Changed: font-semibold -> font-medium, text-blue-700 -> text-neutral-800 */}
                                 {section.trim()}
                             </h3>
                         );
                     }
-                    return <p key={index} className="mb-2 text-gray-800 text-sm">{section.trim()}</p>;
+                    return <p key={index} className="mb-2 text-gray-700 text-base">{section.trim()}</p>; {/* Changed: text-gray-800 -> text-gray-700, text-sm -> text-base */}
                 })}
             </div>
         );
@@ -397,24 +407,30 @@ export default function Home() {
                     </div>
                 </div>
 
-                {/* Section 2: Text input / preview area and upload buttons */}
+                {/* Section 2: Text input / upload buttons */}
                 <div className="bg-gray-50 p-6 rounded-lg shadow-inner mb-8"> {/* Card-like section */}
                     <p className="text-center text-gray-700 font-semibold text-lg mb-6">2. Vložte text nebo nahrajte dokument:</p>
-                    {!hasContent ? (
-                        <textarea
-                            placeholder="Sem vložte text ručně nebo nahrajte dokument pomocí tlačítek níže."
-                            className="p-4 border-2 border-dashed border-gray-300 rounded-lg bg-white shadow-sm resize-none w-full min-h-[160px] mb-6 focus:outline-none focus:border-blue-500 transition-colors" /* Dashed border, larger min-height, focus style */
-                            rows={8}
-                            value={processedText}
-                            onChange={(e) => setProcessedText(e.target.value)}
-                            disabled={loading}
-                        />
-                    ) : (
-                        <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-4 mb-6 text-gray-800 text-sm overflow-auto max-h-48 shadow-md"> {/* Enhanced preview */}
-                            <h3 className="font-bold mb-2 text-base text-blue-700">Nahraný/vložený text:</h3>
-                            <pre className="whitespace-pre-wrap text-wrap text-gray-700">{processedText}</pre>
+                    {/* Always show textarea for manual input. If text came from file, show it empty. */}
+                    <textarea
+                        placeholder={isFromFileUpload ? "Text byl nahrán a zpracován. Pro ruční zadání, prosím, vymažte vše nebo zadejte text sem." : "Sem vložte text ručně nebo nahrajte dokument pomocí tlačítek níže."}
+                        className="p-4 border-2 border-dashed border-gray-300 rounded-lg bg-white shadow-sm resize-none w-full min-h-[160px] mb-6 focus:outline-none focus:border-blue-500 transition-colors"
+                        rows={8}
+                        // Display processedText only if it's from manual input, otherwise show empty
+                        value={isFromFileUpload ? '' : processedText}
+                        onChange={(e) => {
+                            setProcessedText(e.target.value);
+                            setIsFromFileUpload(false); // Any manual input means it's no longer from file
+                        }}
+                        disabled={loading}
+                    />
+                    {/* Display a confirmation/summary if text was successfully uploaded from file */}
+                    {isFromFileUpload && processedText.length > 10 && (
+                        <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-4 mb-6 text-gray-800 text-sm shadow-md">
+                            <p className="font-bold mb-2 text-base text-blue-700">Dokument úspěšně nahrán a text zpracován. Pokračujte k překladu.</p>
+                            <p className="text-gray-600"> (Pokud chcete vložit text ručně, použijte tlačítko "Vymazat vše".)</p>
                         </div>
                     )}
+
 
                     {/* Hidden file inputs */}
                     <input
@@ -494,12 +510,12 @@ export default function Home() {
                 <div className="flex flex-col sm:flex-row gap-4 mb-8"> {/* Responsive layout, more mb */}
                     <button
                         className={`flex-1 py-4 rounded-xl text-xl font-bold transition-all duration-200 ease-in-out transform hover:-translate-y-1 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 ${
-                            consentChecked && gdprChecked && hasContent && !loading
+                            consentChecked && gdprChecked && processedText.trim().length > 0 && !loading // Check processedText directly
                                 ? 'bg-blue-600 text-white hover:bg-blue-700'
                                 : 'bg-gray-400 text-white cursor-not-allowed'
                         }`}
                         onClick={handleSubmit}
-                        disabled={!selectedType || !consentChecked || !gdprChecked || !hasContent || loading}
+                        disabled={!selectedType || !consentChecked || !gdprChecked || processedText.trim().length === 0 || loading}
                     >
                         {loading ? (
                             <span className="flex items-center justify-center">
