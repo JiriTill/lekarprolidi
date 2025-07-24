@@ -1,10 +1,11 @@
+// home (1).jsx
 import React, { useState, useEffect, useRef, useCallback } from 'react'; // Added useCallback
 import FeedbackForm from '../components/FeedbackForm';
 import { Link } from 'react-router-dom';
 import Footer from '../components/Footer';
 import { pdfToImages } from '../utils/pdfToImages';
 import * as pdfjsLib from 'pdfjs-dist/build/pdf';
-import { createWorker } from 'tesseract.js';
+import { createWorker } from 'tesseract.js'; // Ensure createWorker is imported
 
 // Configure PDF.js worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = `/pdfjs/pdf.worker.mjs`;
@@ -21,11 +22,58 @@ const Home = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [seconds, setSeconds] = useState(0);
     const [selectedType, setSelectedType] = useState(null);
-    const [isTesseractReady, setIsTesseractReady] = useState(true);
+    const [isTesseractReady, setIsTesseractReady] = useState(false); // Changed initial state to false
+    const [worker, setWorker] = useState(null); // State to hold the Tesseract worker instance
 
     // Refs for hidden file input elements
     const fileUploadRef = useRef(null);
     const cameraCaptureRef = useRef(null);
+
+    // Effect to initialize Tesseract.js worker
+    useEffect(() => {
+        const loadTesseractWorker = async () => {
+            setStatusMessage('Načítám OCR engine...');
+            setIsTesseractReady(false); // Ensure false until fully ready
+            try {
+                // Ensure workerPath and corePath are correct relative to public/
+                const newWorker = await createWorker({
+                    logger: m => {
+                        // Log Tesseract.js progress for debugging
+                        console.log(m);
+                        if (m.status === 'recognizing text') {
+                            setStatusMessage(`📷 Rozpoznávám text: ${Math.round(m.progress * 100)}%`);
+                        } else if (m.status === 'loading tesseract core' || m.status === 'loading language traineddata') {
+                            setStatusMessage(`Načítám OCR engine: ${m.status.replace('loading ', '').replace('tesseract core', 'jádro Tesseractu').replace('language traineddata', 'jazyková data')}... ${Math.round(m.progress * 100)}%`);
+                        } else if (m.status === 'initializing tesseract') {
+                            setStatusMessage('Inicializuji OCR engine...');
+                        }
+                    },
+                    workerPath: '/tesseract-data/worker.min.js', // Path to worker.min.js
+                    corePath: '/tesseract-data/tesseract-core.wasm.js', // Path to tesseract-core.wasm.js
+                });
+
+                await newWorker.load();
+                await newWorker.loadLanguage('eng'); // Load English language, as specified in your runOCR function
+                await newWorker.initialize('eng');
+                setWorker(newWorker);
+                setIsTesseractReady(true);
+                setStatusMessage('OCR engine připraven.');
+            } catch (error) {
+                console.error('Failed to load Tesseract worker:', error);
+                setStatusMessage('❌ Nepodařilo se načíst OCR engine. Zkuste obnovit stránku.');
+                setIsTesseractReady(false);
+            }
+        };
+
+        loadTesseractWorker();
+
+        // Cleanup function to terminate the worker when the component unmounts
+        return () => {
+            if (worker) {
+                worker.terminate();
+            }
+        };
+    }, []); // Empty dependency array ensures this runs once on mount
 
     // Function to convert File object to Base64 for OCR processing
     const convertFileToBase64 = (file) => {
@@ -38,32 +86,24 @@ const Home = () => {
     };
 
     // OCR function using the initialized Tesseract.js worker
-        const runOCR = async (imageBase64) => {
-          try {
+    const runOCR = async (imageBase64) => {
+        if (!worker) { // Ensure the worker is initialized before attempting OCR
+            console.error("Tesseract worker is not initialized.");
+            setStatusMessage("❌ Tesseract engine se nenačetl správně. Zkuste obnovit stránku.");
+            return '';
+        }
+        try {
             setStatusMessage('📷 Spouštím rozpoznávání textu (OCR)...');
-            const result = await window.Tesseract.recognize(
-              imageBase64,
-              'eng',
-              {
-                langPath: '/tesseract-data',
-                corePath: '/tesseract-data/tesseract-core.wasm.js',
-                workerPath: '/tesseract-data/worker.min.js',
-                logger: m => console.log(m),
-              }
-            );
+            // Use the initialized worker instance
+            const result = await worker.recognize(imageBase64);
             setStatusMessage('');
             return result.data.text;
-          } catch (error) {
+        } catch (error) {
             console.error('OCR error:', error);
-            setStatusMessage('⚠️ Nepodařilo se spustit OCR.');
+            setStatusMessage('⚠️ Nepodařilo se spustit OCR. Zkuste prosím jiný dokument nebo text.');
             return '';
-          }
-            if (!window.Tesseract || typeof window.Tesseract.recognize !== 'function') {
-              console.error("Tesseract is not properly loaded.");
-              setStatusMessage("❌ Tesseract se nenačetl správně.");
-              return '';
-            }
-        };
+        }
+    };
 
     // Consolidated handler for all file uploads (PDF and general images)
     const handleFileUpload = async (event) => {
@@ -106,7 +146,6 @@ const Home = () => {
                                 throw new Error("Nepodařilo se převést PDF na obrázky pro OCR.");
                             }
                             for (const imageBase64 of images) {
-                                // Use the runOCR function that uses the worker
                                 extractedFullText += await runOCR(imageBase64) + '\n';
                             }
                         } catch (ocrProcessErr) {
@@ -135,7 +174,6 @@ const Home = () => {
 
             } else if (file.type.startsWith('image/')) {
                 const base64 = await convertFileToBase64(file);
-                // Use the runOCR function that uses the worker
                 const extractedText = await runOCR(base64);
 
                 if (extractedText.trim().length > 10) {
@@ -179,7 +217,6 @@ const Home = () => {
 
         try {
             const base64 = await convertFileToBase64(file);
-            // Use the runOCR function that uses the worker
             const extractedText = await runOCR(base64);
 
             if (extractedText.trim().length > 10) {
@@ -311,7 +348,7 @@ const Home = () => {
         setIsLoading(false);
         setSeconds(0);
         setSelectedType(null); // Reset selected type as well
-        setErrorMessage(null); // Clear any Tesseract errors on clear
+        // setErrorMessage(null); // No longer needed as it's handled by statusMessage
     };
 
     // Renders the structured output from the API response
@@ -341,7 +378,7 @@ const Home = () => {
 
     // Helper to determine if the message is a "processing" message (not final success/error)
     const isProcessingMessage = (msg) => {
-        return msg.includes('Zpracovávám') || msg.includes('Překládám') || msg.includes('zkouším OCR') || msg.includes('Provádím OCR');
+        return msg.includes('Zpracovávám') || msg.includes('Překládám') || msg.includes('zkouším OCR') || msg.includes('Rozpoznávám text') || msg.includes('Načítám OCR engine') || msg.includes('Inicializuji OCR engine');
     };
 
     return (
@@ -459,7 +496,7 @@ const Home = () => {
                         (statusMessage.startsWith('⚠️') ? 'bg-red-100 text-red-800 border border-red-200' :
                         'bg-blue-100 text-blue-800 border border-blue-200') // General processing messages
                     }`}>
-                        {isLoading && isProcessingMessage(statusMessage) && (
+                        {(isLoading || !isTesseractReady && statusMessage.includes('Načítám OCR engine')) && isProcessingMessage(statusMessage) && (
                             <span className="animate-spin text-xl">🔄</span>
                         )}
                         <span>{statusMessage}</span>
