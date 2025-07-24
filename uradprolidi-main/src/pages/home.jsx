@@ -42,7 +42,7 @@ const Home = () => {
             setStatusMessage('📷 Spouštím rozpoznávání textu (OCR)...');
             const result = await window.Tesseract.recognize(
               imageBase64,
-              'ces',
+              'eng',
               {
                 langPath: '/tesseract-data',
                 corePath: '/tesseract-data/tesseract-core.wasm.js',
