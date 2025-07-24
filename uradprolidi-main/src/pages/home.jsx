@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import * as pdfjsLib from 'pdfjs-dist/build/pdf'; // Opraveno zde
+import * as pdfjsLib from 'pdfjs-dist/build/pdf';
 import FeedbackForm from '../components/FeedbackForm';
 import { Link } from 'react-router-dom';
 import Footer from '../components/Footer';
@@ -70,7 +70,7 @@ export default function Home() {
         setProcessedText(''); // Clear previous content (important for handleSubmit)
         setIsFromFileUpload(false); // Reset for new upload process
         setOutput(''); // Clear previous output
-        setUploadStatusMessage('Zpracovávám nahraný text. Chvíli to může trvat.'); // Initial general message
+        setUploadStatusMessage('Zpracovávám nahraný text. Chvíli to může trvat.'); // Initial general message for upload
 
         try {
             if (file.type === 'application/pdf') {
@@ -174,7 +174,7 @@ export default function Home() {
         setProcessedText('');
         setIsFromFileUpload(false); // Reset for new capture process
         setOutput('');
-        setUploadStatusMessage('Zpracovávám nahraný text. Chvíli to může trvat.');
+        setUploadStatusMessage('Zpracovávám nahraný text. Chvíli to může trvat.'); // Initial general message for capture
 
         try {
             const base64 = await convertFileToBase64(file);
@@ -205,6 +205,8 @@ export default function Home() {
     // Handles the submission of processed text to the API
     const handleSubmit = async () => {
         if (!selectedType) {
+            // This alert will not happen if the button is correctly disabled.
+            // But it's good to keep as a fallback.
             setUploadStatusMessage('⚠️ Vyberte, čemu chcete rozumět – lékařskou zprávu nebo rozbor krve.');
             return;
         }
@@ -216,7 +218,7 @@ export default function Home() {
 
         setLoading(true);
         setOutput('');
-        setUploadStatusMessage(''); // Clear messages before submission
+        setUploadStatusMessage(''); // Clear general upload messages before actual translation starts
 
         try {
             // Define the prompt based on the selected document type
@@ -304,6 +306,7 @@ export default function Home() {
 
             const data = await response.json();
             setOutput(data.result || '⚠️ Odpověď je prázdná.');
+            // This message is now explicitly for translation completion
             setUploadStatusMessage('✅ Překlad úspěšně dokončen.');
         } catch (error) {
             console.error('Frontend error:', error);
@@ -341,12 +344,12 @@ export default function Home() {
                     // Determine if section starts with an emoji, then display as a strong heading
                     if (section.startsWith('🏥') || section.startsWith('👤') || section.startsWith('📄') || section.startsWith('🧪') || section.startsWith('📋') || section.startsWith('🧠') || section.startsWith('⚠️') || section.startsWith('🛡️')) {
                         return (
-                            <h3 key={index} className="text-lg font-medium mt-4 mb-2 text-neutral-800"> {/* Changed: font-semibold -> font-medium, text-blue-700 -> text-neutral-800 */}
+                            <h3 key={index} className="text-lg font-medium mt-4 mb-2 text-neutral-800">
                                 {section.trim()}
                             </h3>
                         );
                     }
-                    return <p key={index} className="mb-2 text-gray-700 text-base">{section.trim()}</p>; {/* Changed: text-gray-800 -> text-gray-700, text-sm -> text-base */}
+                    return <p key={index} className="mb-2 text-gray-700 text-base">{section.trim()}</p>;
                 })}
             </div>
         );
@@ -354,17 +357,17 @@ export default function Home() {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col items-center p-4">
-            <div className="w-full max-w-3xl bg-white p-8 rounded-xl shadow-2xl my-8"> {/* Increased max-w and shadow */}
-                <h1 className="text-5xl font-extrabold text-center text-blue-800 mb-4 tracking-tight">Lékař pro lidi</h1> {/* Larger, darker, tighter spacing */}
-                <p className="mb-10 text-center text-gray-700 text-xl leading-relaxed"> {/* Larger, more relaxed leading */}
+            <div className="w-full max-w-3xl bg-white p-8 rounded-xl shadow-2xl my-8">
+                <h1 className="text-5xl font-extrabold text-center text-blue-800 mb-4 tracking-tight">Lékař pro lidi</h1>
+                <p className="mb-10 text-center text-gray-700 text-xl leading-relaxed">
                     Lékařské zprávy jsou někdy oříškem i pro samotné lékaře. <br />
                     Proto jsem vytvořil nástroj, který vám je přeloží do srozumitelné lidské řeči, člověčiny.
                 </p>
 
                 {/* Jak to funguje? section */}
-                <div className="bg-blue-50 border-l-4 border-blue-400 text-blue-900 p-5 rounded-lg shadow-inner text-base mb-10"> {/* Better padding, rounded, shadow-inner, larger font */}
-                    <p className="font-bold mb-3 text-lg">Jak to funguje?</p> {/* Bolder, larger */}
-                    <ul className="list-disc list-inside space-y-2"> {/* More spacing */}
+                <div className="bg-blue-50 border-l-4 border-blue-400 text-blue-900 p-5 rounded-lg shadow-inner text-base mb-10">
+                    <p className="font-bold mb-3 text-lg">Jak to funguje?</p>
+                    <ul className="list-disc list-inside space-y-2">
                         <li>Vyberte, zda se jedná o Lékařskou zprávu nebo Rozbor krve.</li>
                         <li>Vložte text z dokumentu do textového pole, nebo nahrajte PDF či fotografii.</li>
                         <li>Souhlaste s podmínkami.</li>
@@ -383,9 +386,9 @@ export default function Home() {
                 </div>
 
                 {/* Section 1: Document type selection */}
-                <div className="bg-gray-50 p-6 rounded-lg shadow-inner mb-8"> {/* Card-like section */}
+                <div className="bg-gray-50 p-6 rounded-lg shadow-inner mb-8">
                     <p className="text-center text-gray-700 font-semibold text-lg mb-6">1. Vyberte typ dokumentu:</p>
-                    <div className="flex flex-col sm:flex-row justify-center gap-4"> {/* Responsive layout for buttons */}
+                    <div className="flex flex-col sm:flex-row justify-center gap-4">
                         <button
                             className={`flex-1 px-6 py-3 rounded-xl shadow-md transition-all duration-200 ease-in-out transform hover:-translate-y-1 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 ${
                                 selectedType === 'zprava' ? 'bg-blue-600 text-white font-bold' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
@@ -408,29 +411,21 @@ export default function Home() {
                 </div>
 
                 {/* Section 2: Text input / upload buttons */}
-                <div className="bg-gray-50 p-6 rounded-lg shadow-inner mb-8"> {/* Card-like section */}
+                <div className="bg-gray-50 p-6 rounded-lg shadow-inner mb-8">
                     <p className="text-center text-gray-700 font-semibold text-lg mb-6">2. Vložte text nebo nahrajte dokument:</p>
-                    {/* Always show textarea for manual input. If text came from file, show it empty. */}
+                    {/* Textarea for manual input or to show processed text if not from file */}
                     <textarea
-                        placeholder={isFromFileUpload ? "Text byl nahrán a zpracován. Pro ruční zadání, prosím, vymažte vše nebo zadejte text sem." : "Sem vložte text ručně nebo nahrajte dokument pomocí tlačítek níže."}
+                        placeholder={"Sem vložte text ručně nebo nahrajte dokument pomocí tlačítek níže."}
                         className="p-4 border-2 border-dashed border-gray-300 rounded-lg bg-white shadow-sm resize-none w-full min-h-[160px] mb-6 focus:outline-none focus:border-blue-500 transition-colors"
                         rows={8}
-                        // Display processedText only if it's from manual input, otherwise show empty
-                        value={isFromFileUpload ? '' : processedText}
+                        value={processedText} // Always bind to processedText
                         onChange={(e) => {
                             setProcessedText(e.target.value);
                             setIsFromFileUpload(false); // Any manual input means it's no longer from file
+                            setUploadStatusMessage(''); // Clear status message on manual input
                         }}
                         disabled={loading}
                     />
-                    {/* Display a confirmation/summary if text was successfully uploaded from file */}
-                    {isFromFileUpload && processedText.length > 10 && (
-                        <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-4 mb-6 text-gray-800 text-sm shadow-md">
-                            <p className="font-bold mb-2 text-base text-blue-700">Dokument úspěšně nahrán a text zpracován. Pokračujte k překladu.</p>
-                            <p className="text-gray-600"> (Pokud chcete vložit text ručně, použijte tlačítko "Vymazat vše".)</p>
-                        </div>
-                    )}
-
 
                     {/* Hidden file inputs */}
                     <input
@@ -450,7 +445,7 @@ export default function Home() {
                     />
 
                     {/* Upload buttons */}
-                    <div className="flex flex-col sm:flex-row gap-4"> {/* Responsive layout for buttons */}
+                    <div className="flex flex-col sm:flex-row gap-4">
                         <button
                             className="flex-1 bg-blue-500 text-white py-3 rounded-lg text-lg font-semibold hover:bg-blue-600 transition shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
                             onClick={() => fileUploadRef.current.click()}
@@ -468,9 +463,9 @@ export default function Home() {
                     </div>
                 </div>
 
-                {/* Status message display - MOVED HERE */}
-                {uploadStatusMessage && (
-                    <div className={`p-4 rounded-lg mb-8 text-base font-medium ${ /* Larger padding, mb, font */
+                {/* Status message display for upload/processing - Displayed above consent checkboxes */}
+                {uploadStatusMessage && !loading && ( // Only show if not in loading state (translation specific loading)
+                    <div className={`p-4 rounded-lg mb-8 text-base font-medium ${
                         uploadStatusMessage.startsWith('✅') ? 'bg-green-100 text-green-800 border border-green-200' :
                         (uploadStatusMessage.startsWith('⚠️') ? 'bg-red-100 text-red-800 border border-red-200' :
                         'bg-orange-100 text-orange-800 border border-orange-200')
@@ -480,13 +475,13 @@ export default function Home() {
                 )}
 
                 {/* Section 3: Consent checkboxes */}
-                <div className="bg-gray-50 p-6 rounded-lg shadow-inner mb-8"> {/* Card-like section */}
+                <div className="bg-gray-50 p-6 rounded-lg shadow-inner mb-8">
                     <p className="text-center text-gray-700 font-semibold text-lg mb-6">3. Souhlas s podmínkami:</p>
-                    <div className="space-y-4"> {/* More spacing */}
-                        <label className="flex items-center text-gray-700 text-base cursor-pointer"> {/* Larger font, pointer cursor */}
+                    <div className="space-y-4">
+                        <label className="flex items-center text-gray-700 text-base cursor-pointer">
                             <input
                                 type="checkbox"
-                                className="form-checkbox h-5 w-5 text-blue-600 rounded mr-3" /* Larger checkbox, rounded */
+                                className="form-checkbox h-5 w-5 text-blue-600 rounded mr-3"
                                 checked={consentChecked}
                                 onChange={(e) => setConsentChecked(e.target.checked)}
                                 disabled={loading}
@@ -507,10 +502,10 @@ export default function Home() {
                 </div>
 
                 {/* Submit and Clear buttons */}
-                <div className="flex flex-col sm:flex-row gap-4 mb-8"> {/* Responsive layout, more mb */}
+                <div className="flex flex-col sm:flex-row gap-4 mb-8">
                     <button
                         className={`flex-1 py-4 rounded-xl text-xl font-bold transition-all duration-200 ease-in-out transform hover:-translate-y-1 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 ${
-                            consentChecked && gdprChecked && processedText.trim().length > 0 && !loading // Check processedText directly
+                            selectedType && consentChecked && gdprChecked && processedText.trim().length > 0 && !loading // Added selectedType
                                 ? 'bg-blue-600 text-white hover:bg-blue-700'
                                 : 'bg-gray-400 text-white cursor-not-allowed'
                         }`}
@@ -519,7 +514,7 @@ export default function Home() {
                     >
                         {loading ? (
                             <span className="flex items-center justify-center">
-                                <span className="animate-spin rounded-full h-6 w-6 border-b-2 border-white mr-3"></span> {/* Larger spinner */}
+                                <span className="animate-spin rounded-full h-6 w-6 border-b-2 border-white mr-3"></span>
                                 Překládám...
                             </span>
                         ) : (
@@ -538,12 +533,12 @@ export default function Home() {
                     </button>
                 </div>
 
-                {/* Loading indicator for translation */}
-                {loading && (
-                    <div className="flex flex-col items-center text-blue-700 text-base mt-4"> {/* Darker blue, larger font */}
+                {/* Loading indicator for translation (only when loading for translation) */}
+                {loading && ( // This block only appears if loading is true (meaning a translation is in progress)
+                    <div className="flex flex-col items-center text-blue-700 text-base mt-4">
                         <p className="mb-2">⏳ Překlad může trvat až 60 vteřin. Díky za trpělivost.</p>
                         <div className="flex items-center gap-2">
-                            <span className="animate-spin text-2xl">🔄</span> {/* Larger icon */}
+                            <span className="animate-spin text-2xl">🔄</span>
                             <span>Zpracovávám... ({seconds}s)</span>
                         </div>
                     </div>
@@ -551,14 +546,14 @@ export default function Home() {
 
                 {/* Output section */}
                 {output && (
-                    <div className="mt-12 border-t pt-8 border-gray-200"> {/* More top margin, subtle border */}
-                        <h2 className="text-3xl font-bold mb-6 text-blue-800 text-center">Výsledek překladu:</h2> {/* Larger, bolder, centered */}
+                    <div className="mt-12 border-t pt-8 border-gray-200">
+                        <h2 className="text-3xl font-bold mb-6 text-blue-800 text-center">Výsledek překladu:</h2>
                         {renderStructuredOutput()}
                         <FeedbackForm />
                     </div>
                 )}
             </div>
-            <Footer /> {/* Footer remains unchanged */}
+            <Footer />
         </div>
     );
 }
