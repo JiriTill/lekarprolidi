@@ -105,24 +105,28 @@ const Home = () => {
     };
 
     // OCR function using the initialized Tesseract.js worker
-    const runOCR = useCallback(async (imageData) => {
-        if (!isTesseractReady || !tesseractWorker) {
-            console.error('Tesseract worker is not initialized or ready.');
-            setStatusMessage('⚠️ OCR engine není připraven. Zkuste prosím znovu.');
-            return '';
-        }
-        try {
-            setStatusMessage('Provádím OCR...');
-            // Use the initialized worker here. Language is already loaded/initialized on the worker.
-            const { data: { text } } = await tesseractWorker.recognize(imageData);
-            return text;
-        } catch (error) {
-            console.error('Chyba při rozpoznávání textu (OCR):', error);
-            setStatusMessage('⚠️ Chyba při rozpoznávání textu (OCR): ' + error.message);
-            return ''; // Return empty string to indicate OCR failure for this image
-        }
-    }, [isTesseractReady, tesseractWorker]); // Depend on tesseractWorker and isTesseractReady
-
+            const runOCR = async (imageBase64) => {
+              try {
+                const worker = Tesseract.createWorker({
+                  langPath: '/tesseract-data', // Path to where `ces.traineddata.gz` is stored
+                  corePath: '/tesseract-data/tesseract-core.wasm.js',
+                  workerPath: '/tesseract-data/worker.min.js',
+                  logger: (m) => console.log(m), // Optional: for progress
+                });
+            
+                await worker.load();
+                await worker.loadLanguage('ces');
+                await worker.initialize('ces');
+            
+                const { data } = await worker.recognize(imageBase64);
+                await worker.terminate();
+            
+                return data.text;
+              } catch (err) {
+                console.error('OCR error:', err);
+                return '';
+              }
+            };
 
     // Consolidated handler for all file uploads (PDF and general images)
     const handleFileUpload = async (event) => {
