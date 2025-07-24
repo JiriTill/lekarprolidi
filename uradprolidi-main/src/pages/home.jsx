@@ -21,22 +21,23 @@ export default function Home() {
     const [loading, setLoading] = useState(false);
     const [seconds, setSeconds] = useState(0);
     const [selectedType, setSelectedType] = useState(null);
+    const [translationInProgress, setTranslationInProgress] = useState(false); // New state for translation loading
 
     // Refs for hidden file input elements
     const fileUploadRef = useRef(null);
     const cameraCaptureRef = useRef(null);
 
-    // Timer for loading feedback
+    // Timer for loading feedback (now tied to translationInProgress)
     useEffect(() => {
         let timer;
-        if (loading) {
+        if (translationInProgress) { // Only run timer if translation is in progress
             timer = setInterval(() => setSeconds((s) => s + 1), 1000);
         } else {
             clearInterval(timer);
             setSeconds(0);
         }
         return () => clearInterval(timer);
-    }, [loading]);
+    }, [translationInProgress]);
 
     // Function to convert File object to Base64 for OCR processing
     const convertFileToBase64 = (file) => {
@@ -66,11 +67,12 @@ export default function Home() {
         const file = event.target.files[0];
         if (!file) return;
 
-        setLoading(true);
+        setLoading(true); // General loading for any file operation
+        setTranslationInProgress(false); // Ensure translation loading is off
         setProcessedText(''); // Clear previous content (important for handleSubmit)
-        setIsFromFileUpload(false); // Reset for new upload process
+        setIsFromFileUpload(true); // Assume file upload for now, will revert if empty
         setOutput(''); // Clear previous output
-        setUploadStatusMessage('Zpracovávám nahraný text. Chvíli to může trvat.'); // Initial general message for upload
+        setUploadStatusMessage('Zpracovávám nahraný text. Chvíli to může trvat.'); [cite_start]// Initial general message [cite: 3]
 
         try {
             if (file.type === 'application/pdf') {
@@ -170,11 +172,12 @@ export default function Home() {
         const file = event.target.files[0];
         if (!file) return;
 
-        setLoading(true);
+        setLoading(true); // General loading for any file operation
+        setTranslationInProgress(false); // Ensure translation loading is off
         setProcessedText('');
-        setIsFromFileUpload(false); // Reset for new capture process
+        setIsFromFileUpload(true); // Assume file upload for now, will revert if empty
         setOutput('');
-        setUploadStatusMessage('Zpracovávám nahraný text. Chvíli to může trvat.'); // Initial general message for capture
+        setUploadStatusMessage('Zpracovávám nahraný text. Chvíli to může trvat.'); [cite_start]// Initial general message [cite: 3]
 
         try {
             const base64 = await convertFileToBase64(file);
@@ -216,9 +219,10 @@ export default function Home() {
             return;
         }
 
-        setLoading(true);
+        setLoading(true); // General loading for any file operation
+        setTranslationInProgress(true); // Now translation is in progress
         setOutput('');
-        setUploadStatusMessage(''); // Clear general upload messages before actual translation starts
+        setUploadStatusMessage('Překládám do lidské řeči. Může to chvíli trvat.'); [cite_start]// Message specific to translation [cite: 3]
 
         try {
             // Define the prompt based on the selected document type
@@ -290,6 +294,7 @@ export default function Home() {
             if (!processedText || processedText.length < 10) {
                 setUploadStatusMessage('⚠️ Vstupní text je příliš krátký.');
                 setLoading(false);
+                setTranslationInProgress(false);
                 return;
             }
 
@@ -314,6 +319,7 @@ export default function Home() {
             setUploadStatusMessage('⚠️ Došlo k chybě při zpracování požadavku.');
         } finally {
             setLoading(false);
+            setTranslationInProgress(false); // Translation has finished (success or error)
         }
     };
 
@@ -326,6 +332,7 @@ export default function Home() {
         setConsentChecked(false);
         setGdprChecked(false);
         setLoading(false);
+        setTranslationInProgress(false); // Clear translation loading
         setSeconds(0);
         setSelectedType(null); // Reset selected type as well
     };
@@ -463,8 +470,8 @@ export default function Home() {
                     </div>
                 </div>
 
-                {/* Status message display for upload/processing - Displayed above consent checkboxes */}
-                {uploadStatusMessage && !loading && ( // Only show if not in loading state (translation specific loading)
+                [cite_start]{/* Status message display for upload/processing - Displayed after upload buttons [cite: 3] */}
+                {uploadStatusMessage && !translationInProgress && ( // Only show if not in translation loading state
                     <div className={`p-4 rounded-lg mb-8 text-base font-medium ${
                         uploadStatusMessage.startsWith('✅') ? 'bg-green-100 text-green-800 border border-green-200' :
                         (uploadStatusMessage.startsWith('⚠️') ? 'bg-red-100 text-red-800 border border-red-200' :
@@ -484,7 +491,7 @@ export default function Home() {
                                 className="form-checkbox h-5 w-5 text-blue-600 rounded mr-3"
                                 checked={consentChecked}
                                 onChange={(e) => setConsentChecked(e.target.checked)}
-                                disabled={loading}
+                                disabled={loading || translationInProgress} // Disable if any loading is active
                             />
                             <span className="leading-tight">Rozumím, že se nejedná o profesionální lékařskou radu.</span>
                         </label>
@@ -494,7 +501,7 @@ export default function Home() {
                                 className="form-checkbox h-5 w-5 text-blue-600 rounded mr-3"
                                 checked={gdprChecked}
                                 onChange={(e) => setGdprChecked(e.target.checked)}
-                                disabled={loading}
+                                disabled={loading || translationInProgress} // Disable if any loading is active
                             />
                             <span className="leading-tight">Souhlasím se zpracováním vloženého dokumentu nebo textu. Data nejsou ukládána.</span>
                         </label>
@@ -505,14 +512,14 @@ export default function Home() {
                 <div className="flex flex-col sm:flex-row gap-4 mb-8">
                     <button
                         className={`flex-1 py-4 rounded-xl text-xl font-bold transition-all duration-200 ease-in-out transform hover:-translate-y-1 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 ${
-                            selectedType && consentChecked && gdprChecked && processedText.trim().length > 0 && !loading // Added selectedType
+                            selectedType && consentChecked && gdprChecked && processedText.trim().length > 0 && !loading && !translationInProgress // Conditions for active button
                                 ? 'bg-blue-600 text-white hover:bg-blue-700'
                                 : 'bg-gray-400 text-white cursor-not-allowed'
                         }`}
                         onClick={handleSubmit}
-                        disabled={!selectedType || !consentChecked || !gdprChecked || processedText.trim().length === 0 || loading}
+                        disabled={!selectedType || !consentChecked || !gdprChecked || processedText.trim().length === 0 || loading || translationInProgress} // Disable conditions
                     >
-                        {loading ? (
+                        {translationInProgress ? ( // Check translationInProgress for spinner
                             <span className="flex items-center justify-center">
                                 <span className="animate-spin rounded-full h-6 w-6 border-b-2 border-white mr-3"></span>
                                 Překládám...
@@ -524,17 +531,17 @@ export default function Home() {
 
                     <button
                         className={`flex-1 py-4 rounded-xl text-xl font-bold transition-all duration-200 ease-in-out transform hover:-translate-y-1 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-50 ${
-                            loading ? 'bg-gray-400 text-white cursor-not-allowed' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            loading || translationInProgress ? 'bg-gray-400 text-white cursor-not-allowed' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                         }`}
                         onClick={handleClear}
-                        disabled={loading}
+                        disabled={loading || translationInProgress} // Disable if any loading is active
                     >
                         Vymazat vše
                     </button>
                 </div>
 
-                {/* Loading indicator for translation (only when loading for translation) */}
-                {loading && ( // This block only appears if loading is true (meaning a translation is in progress)
+                [cite_start]{/* Loading indicator for translation (only when translationInProgress is true) [cite: 3] */}
+                {translationInProgress && ( // This block only appears if translation is in progress
                     <div className="flex flex-col items-center text-blue-700 text-base mt-4">
                         <p className="mb-2">⏳ Překlad může trvat až 60 vteřin. Díky za trpělivost.</p>
                         <div className="flex items-center gap-2">
