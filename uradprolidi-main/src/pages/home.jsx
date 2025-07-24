@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import * => pdfjsLib from 'pdfjs-dist/build/pdf';
+import * as pdfjsLib from 'pdfjs-dist/build/pdf'; // Opraveno zde
 import FeedbackForm from '../components/FeedbackForm';
 import { Link } from 'react-router-dom';
-import Footer from '../components/Footer'; // Keep Footer import
+import Footer from '../components/Footer';
 import { pdfToImages } from '../utils/pdfToImages';
 import Tesseract from 'tesseract.js';
 
