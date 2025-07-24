@@ -1,39 +1,23 @@
-import React, { useState, useEffect, useRef } from 'react';
-import * as pdfjsLib from 'pdfjs-dist/build/pdf';
+import React, { useState, useEffect, useRef, useCallback } from 'react'; // Added useCallback
 import FeedbackForm from '../components/FeedbackForm';
 import { Link } from 'react-router-dom';
 import Footer from '../components/Footer';
 import { pdfToImages } from '../utils/pdfToImages';
+import * as pdfjsLib from 'pdfjs-dist/build/pdf';
 import * as Tesseract from 'tesseract.js';
-// ... další importy
-// ...
-
-// Globální nastavení cest pro Tesseract.js
-Tesseract.setWorkerPath('/tesseract-data/worker.min.js'); // Cesta k hlavnímu workeru, kterou jste již měl stáhnout
-Tesseract.setLangPath('/tesseract-data/'); // Cesta ke složce s jazykovými daty (kde je ces.traineddata.gz)
-
-// Většinou není potřeba explicitně nastavovat setCorePath s worker.min.js,
-// ale pokud byste měl problémy, můžete zkusit stáhnout tesseract-core.wasm.js
-// z UNPKG (https://unpkg.com/tesseract.js@6.0.1/dist/) a přidat:
-// Tesseract.setCorePath('/tesseract-data/tesseract-core.wasm.js');
-
-// ... zbytek vašeho kódu pro komponentu home.jsx
 
 // Configure PDF.js worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = `/pdfjs/pdf.worker.mjs`;
 
-export default function Home() {
-    // State for text directly typed into the textarea by the user
+// Combined and corrected Home component
+const Home = () => {
+    // State related to general app functionality
     const [inputText, setInputText] = useState('');
-    // State for text extracted from uploaded files (PDF or OCR), used only for API call
     const [uploadedFileTextForApi, setUploadedFileTextForApi] = useState('');
-
     const [output, setOutput] = useState('');
-    // Unified status message for all operations (upload, processing, translation)
     const [statusMessage, setStatusMessage] = useState('');
     const [consentChecked, setConsentChecked] = useState(false);
     const [gdprChecked, setGdprChecked] = useState(false);
-    // General loading state for any active operation (file processing or API call)
     const [isLoading, setIsLoading] = useState(false);
     const [seconds, setSeconds] = useState(0);
     const [selectedType, setSelectedType] = useState(null);
@@ -41,6 +25,55 @@ export default function Home() {
     // Refs for hidden file input elements
     const fileUploadRef = useRef(null);
     const cameraCaptureRef = useRef(null);
+
+    // State for Tesseract worker
+    const [tesseractWorker, setTesseractWorker] = useState(null);
+    // State to indicate if Tesseract worker is ready (important for disabling buttons)
+    const [isTesseractReady, setIsTesseractReady] = useState(false);
+
+    // useEffect to initialize Tesseract worker once
+    useEffect(() => {
+        const initializeTesseract = async () => {
+            try {
+                // Ensure the worker is not already created (e.g., during fast refresh)
+                if (tesseractWorker) {
+                    console.log('Tesseract worker already exists, skipping initialization.');
+                    setIsTesseractReady(true);
+                    return;
+                }
+
+                console.log('Initializing Tesseract.js worker...');
+                const worker = Tesseract.createWorker({
+                    workerPath: '/tesseract-data/worker.min.js',
+                    langPath: '/tesseract-data/',
+                    corePath: '/tesseract-data/tesseract-core.wasm.js',
+                    // logLevel: 'debug', // Uncomment for detailed Tesseract logs in console
+                });
+                await worker.load();
+                await worker.loadLanguage('ces');
+                await worker.initialize('ces');
+                setTesseractWorker(worker);
+                setIsTesseractReady(true); // Mark Tesseract as ready
+                console.log('Tesseract.js worker initialized successfully.');
+            } catch (error) {
+                console.error('Failed to initialize Tesseract.js worker:', error);
+                setErrorMessage('Chyba při inicializaci OCR enginu. Zkuste prosím obnovit stránku.');
+                // You might want to display this error in statusMessage or a dedicated error state
+                setStatusMessage('⚠️ Chyba při inicializaci OCR enginu. Zkuste prosím obnovit stránku.');
+            }
+        };
+
+        initializeTesseract();
+
+        // Cleanup function for the effect
+        return () => {
+            if (tesseractWorker) { // Check if worker exists before terminating
+                console.log('Terminating Tesseract.js worker...');
+                tesseractWorker.terminate();
+            }
+        };
+    }, []); // Empty dependency array means this runs once on mount/unmount
+
 
     // Timer for loading feedback (runs whenever isLoading is true)
     useEffect(() => {
@@ -64,22 +97,35 @@ export default function Home() {
         });
     };
 
-    // OCR function using Tesseract.js
-    const runOCR = async (imageBase64) => {
+    // OCR function using the initialized Tesseract.js worker
+    const runOCR = useCallback(async (imageData) => {
+        if (!isTesseractReady || !tesseractWorker) {
+            console.error('Tesseract worker is not initialized or ready.');
+            setStatusMessage('⚠️ OCR engine není připraven. Zkuste prosím znovu.');
+            return '';
+        }
         try {
-            const result = await Tesseract.recognize(imageBase64, 'ces'); // Use Czech language pack
-            return result.data.text;
+            setStatusMessage('Provádím OCR...');
+            // Use the initialized worker here. Language is already loaded/initialized on the worker.
+            const { data: { text } } = await tesseractWorker.recognize(imageData);
+            return text;
         } catch (error) {
             console.error('Chyba při rozpoznávání textu (OCR):', error);
             setStatusMessage('⚠️ Chyba při rozpoznávání textu (OCR): ' + error.message);
             return ''; // Return empty string to indicate OCR failure for this image
         }
-    };
+    }, [isTesseractReady, tesseractWorker]); // Depend on tesseractWorker and isTesseractReady
+
 
     // Consolidated handler for all file uploads (PDF and general images)
     const handleFileUpload = async (event) => {
         const file = event.target.files[0];
         if (!file) return;
+
+        if (!isTesseractReady) {
+            setStatusMessage('⚠️ OCR engine se stále načítá. Zkuste prosím za chvíli.');
+            return;
+        }
 
         setIsLoading(true); // Start general loading for file processing
         setUploadedFileTextForApi(''); // Clear previous file content for API
@@ -112,6 +158,7 @@ export default function Home() {
                                 throw new Error("Nepodařilo se převést PDF na obrázky pro OCR.");
                             }
                             for (const imageBase64 of images) {
+                                // Use the runOCR function that uses the worker
                                 extractedFullText += await runOCR(imageBase64) + '\n';
                             }
                         } catch (ocrProcessErr) {
@@ -140,6 +187,7 @@ export default function Home() {
 
             } else if (file.type.startsWith('image/')) {
                 const base64 = await convertFileToBase64(file);
+                // Use the runOCR function that uses the worker
                 const extractedText = await runOCR(base64);
 
                 if (extractedText.trim().length > 10) {
@@ -170,6 +218,11 @@ export default function Home() {
         const file = event.target.files[0];
         if (!file) return;
 
+        if (!isTesseractReady) {
+            setStatusMessage('⚠️ OCR engine se stále načítá. Zkuste prosím za chvíli.');
+            return;
+        }
+
         setIsLoading(true); // Start general loading for file processing
         setUploadedFileTextForApi('');
         setInputText(''); // Clear manual input
@@ -178,6 +231,7 @@ export default function Home() {
 
         try {
             const base64 = await convertFileToBase64(file);
+            // Use the runOCR function that uses the worker
             const extractedText = await runOCR(base64);
 
             if (extractedText.trim().length > 10) {
@@ -338,7 +392,7 @@ export default function Home() {
 
     // Helper to determine if the message is a "processing" message (not final success/error)
     const isProcessingMessage = (msg) => {
-        return msg.includes('Zpracovávám') || msg.includes('Překládám') || msg.includes('zkouším OCR');
+        return msg.includes('Zpracovávám') || msg.includes('Překládám') || msg.includes('zkouším OCR') || msg.includes('Provádím OCR');
     };
 
     return (
@@ -435,14 +489,14 @@ export default function Home() {
                         <button
                             className="flex-1 bg-blue-500 text-white py-3 rounded-lg text-lg font-semibold hover:bg-blue-600 transition shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
                             onClick={() => fileUploadRef.current.click()}
-                            disabled={isLoading}
+                            disabled={isLoading || !isTesseractReady} // Disable if Tesseract is not ready
                         >
                             <span className="mr-2">📁</span> Nahrát dokument (PDF/Obrázek)
                         </button>
                         <button
                             className="flex-1 bg-blue-500 text-white py-3 rounded-lg text-lg font-semibold hover:bg-blue-600 transition shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
                             onClick={() => cameraCaptureRef.current.click()}
-                            disabled={isLoading}
+                            disabled={isLoading || !isTesseractReady} // Disable if Tesseract is not ready
                         >
                             <span className="mr-2">📸</span> Vyfotit dokument mobilem
                         </button>
@@ -539,3 +593,5 @@ export default function Home() {
         </div>
     );
 }
+
+export default Home; // Export the single Home component
