@@ -25,75 +25,6 @@ const Home = () => {
     const fileUploadRef = useRef(null);
     const cameraCaptureRef = useRef(null);
 
-    // State for Tesseract worker
-    const [tesseractWorker, setTesseractWorker] = useState(null);
-    // State to indicate if Tesseract worker is ready (important for disabling buttons)
-    const [isTesseractReady, setIsTesseractReady] = useState(false);
-    // State for Tesseract initialization errors
-    const [errorMessage, setErrorMessage] = useState(null); // <-- ADDED THIS STATE
-
-    // useEffect to initialize Tesseract worker once
-    useEffect(() => {
-        let workerInstance; // Declare workerInstance here for cleanup
-        const initializeTesseract = async () => {
-            try {
-                // Ensure the worker is not already created (e.g., during fast refresh)
-                if (tesseractWorker) {
-                    console.log('Tesseract worker already exists, skipping initialization.');
-                    setIsTesseractReady(true);
-                    return;
-                }
-
-                setStatusMessage('Initializing Tesseract.js worker...');
-                console.log('Initializing Tesseract.js worker...');
-
-                workerInstance = Tesseract.createWorker({
-                    workerPath: '/tesseract-data/worker.min.js',
-                    langPath: '/tesseract-data/',
-                    corePath: '/tesseract-data/tesseract-core.wasm',
-                    logLevel: 'debug',
-                });
-
-                await workerInstance.load();
-                await workerInstance.loadLanguage('ces');
-                await workerInstance.initialize('ces');
-
-                setTesseractWorker(workerInstance);
-                setIsTesseractReady(true); // Mark Tesseract as ready
-                setStatusMessage('Tesseract.js worker ready.');
-                console.log('Tesseract.js worker initialized successfully.');
-            } catch (error) {
-                console.error('Failed to initialize Tesseract.js worker:', error);
-                setErrorMessage('Chyba při inicializaci OCR enginu. Zkuste prosím obnovit stránku.'); // <-- USING THE NEW STATE
-                setStatusMessage('⚠️ Chyba při inicializaci OCR enginu. Zkuste prosím obnovit stránku.');
-                setIsTesseractReady(false); // Ensure button remains disabled
-            }
-        };
-
-        initializeTesseract();
-
-        // Cleanup function for the effect
-        return () => {
-            if (workerInstance) { // Use workerInstance declared in this effect scope
-                console.log('Terminating Tesseract.js worker...');
-                workerInstance.terminate();
-            }
-        };
-    }, []); // Empty dependency array means this runs once on mount/unmount
-
-
-    // Timer for loading feedback (runs whenever isLoading is true)
-    useEffect(() => {
-        let timer;
-        if (isLoading) {
-            timer = setInterval(() => setSeconds((s) => s + 1), 1000);
-        } else {
-            clearInterval(timer);
-            setSeconds(0);
-        }
-        return () => clearInterval(timer);
-    }, [isLoading]);
-
     // Function to convert File object to Base64 for OCR processing
     const convertFileToBase64 = (file) => {
         return new Promise((resolve, reject) => {
@@ -105,28 +36,27 @@ const Home = () => {
     };
 
     // OCR function using the initialized Tesseract.js worker
-            const runOCR = async (imageBase64) => {
-              try {
-                const worker = Tesseract.createWorker({
-                  langPath: '/tesseract-data', // Path to where `ces.traineddata.gz` is stored
-                  corePath: '/tesseract-data/tesseract-core.wasm.js',
-                  workerPath: '/tesseract-data/worker.min.js',
-                  logger: (m) => console.log(m), // Optional: for progress
-                });
-            
-                await worker.load();
-                await worker.loadLanguage('ces');
-                await worker.initialize('ces');
-            
-                const { data } = await worker.recognize(imageBase64);
-                await worker.terminate();
-            
-                return data.text;
-              } catch (err) {
-                console.error('OCR error:', err);
-                return '';
+        const runOCR = async (imageBase64) => {
+          try {
+            setStatusMessage('📷 Spouštím rozpoznávání textu (OCR)...');
+            const result = await window.Tesseract.recognize(
+              imageBase64,
+              'ces',
+              {
+                langPath: '/tesseract-data',
+                corePath: '/tesseract-data/tesseract-core.wasm.js',
+                workerPath: '/tesseract-data/worker.min.js',
+                logger: m => console.log(m),
               }
-            };
+            );
+            setStatusMessage('');
+            return result.data.text;
+          } catch (error) {
+            console.error('OCR error:', error);
+            setStatusMessage('⚠️ Nepodařilo se spustit OCR.');
+            return '';
+          }
+        };
 
     // Consolidated handler for all file uploads (PDF and general images)
     const handleFileUpload = async (event) => {
