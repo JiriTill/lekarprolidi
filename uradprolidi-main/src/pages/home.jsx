@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import Footer from '../components/Footer';
 import { pdfToImages } from '../utils/pdfToImages';
 import * as pdfjsLib from 'pdfjs-dist/build/pdf';
+import { createWorker } from 'tesseract.js';
 
 // Configure PDF.js worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = `/pdfjs/pdf.worker.mjs`;
