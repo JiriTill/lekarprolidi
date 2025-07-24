@@ -7,7 +7,7 @@ import { pdfToImages } from '../utils/pdfToImages';
 import Tesseract from 'tesseract.js';
 
 // Configure PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.269/pdf.worker.min.js`;
+pdfjsLib.GlobalWorkerOptions.workerSrc = `/pdfjs/pdf.worker.mjs`;
 
 export default function Home() {
     // State for text directly typed into the textarea by the user
