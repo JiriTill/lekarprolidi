@@ -12,32 +12,32 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs
 export default function Home() {
     // Consolidated state for all text content (manual input, PDF, OCR)
     const [processedText, setProcessedText] = useState(''); // This will be the text sent to API
-    const [isFromFileUpload, setIsFromFileUpload] = useState(false); // New state to track source of processedText for UI display
 
     const [output, setOutput] = useState('');
-    const [uploadStatusMessage, setUploadStatusMessage] = useState('');
+    const [uploadStatusMessage, setUploadStatusMessage] = useState(''); // Message for file upload/OCR status
+    const [translationStatusMessage, setTranslationStatusMessage] = useState(''); // Message for translation status
     const [consentChecked, setConsentChecked] = useState(false);
     const [gdprChecked, setGdprChecked] = useState(false);
-    const [loading, setLoading] = useState(false);
+    const [isLoadingFile, setIsLoadingFile] = useState(false); // New state for file processing loading
+    const [isTranslating, setIsTranslating] = useState(false); // New state for API translation loading
     const [seconds, setSeconds] = useState(0);
     const [selectedType, setSelectedType] = useState(null);
-    const [translationInProgress, setTranslationInProgress] = useState(false); // New state for translation loading
 
     // Refs for hidden file input elements
     const fileUploadRef = useRef(null);
     const cameraCaptureRef = useRef(null);
 
-    // Timer for loading feedback (now tied to translationInProgress)
+    // Timer for loading feedback (now tied to isTranslating)
     useEffect(() => {
         let timer;
-        if (translationInProgress) { // Only run timer if translation is in progress
+        if (isTranslating) { // Only run timer if translation is in progress
             timer = setInterval(() => setSeconds((s) => s + 1), 1000);
         } else {
             clearInterval(timer);
             setSeconds(0);
         }
         return () => clearInterval(timer);
-    }, [translationInProgress]);
+    }, [isTranslating]);
 
     // Function to convert File object to Base64 for OCR processing
     const convertFileToBase64 = (file) => {
@@ -67,22 +67,20 @@ export default function Home() {
         const file = event.target.files[0];
         if (!file) return;
 
-        setLoading(true); // General loading for any file operation
-        setTranslationInProgress(false); // Ensure translation loading is off
-        setProcessedText(''); // Clear previous content (important for handleSubmit)
-        setIsFromFileUpload(true); // Assume file upload for now, will revert if empty
+        setIsLoadingFile(true); // Start file processing loading
+        setProcessedText(''); // Clear previous content
         setOutput(''); // Clear previous output
-        setUploadStatusMessage('Zpracovávám nahraný text. Chvíli to může trvat.'); [cite_start]// Initial general message [cite: 3]
+        setUploadStatusMessage('Zpracovávám nahraný text. Chvíli to může trvat.'); // Initial message for upload
+        setTranslationStatusMessage(''); // Clear any translation messages
 
         try {
             if (file.type === 'application/pdf') {
                 const reader = new FileReader();
                 reader.onload = async () => {
                     let extractedFullText = '';
-                    let specificErrorMessage = ''; // To store a more specific error message if OCR process itself fails
+                    let specificErrorMessage = '';
 
                     try {
-                        // Attempt standard PDF text extraction
                         const loadingTask = pdfjsLib.getDocument({ data: reader.result });
                         const pdf = await loadingTask.promise;
                         for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
@@ -91,79 +89,64 @@ export default function Home() {
                             extractedFullText += content.items.map((item) => item.str).join(' ') + '\n';
                         }
                     } catch (stdPdfErr) {
-                        // Standard PDF text extraction failed (e.g., scanned PDF), attempt OCR
                         console.warn('PDF standard text extraction failed, attempting OCR:', stdPdfErr);
-                        setUploadStatusMessage('PDF neobsahuje čitelný text, zkouším OCR...'); // Intermediate message
+                        setUploadStatusMessage('PDF neobsahuje čitelný text, zkouším OCR...');
 
                         try {
-                            const images = await pdfToImages(file); // Converts PDF pages to images
+                            const images = await pdfToImages(file);
                             if (!images || images.length === 0) {
-                                // If pdfToImages returns no images, it's a conversion failure
                                 throw new Error("Nepodařilo se převést PDF na obrázky pro OCR.");
                             }
                             for (const imageBase64 of images) {
-                                // runOCR updates uploadStatusMessage directly on failure,
-                                // so we don't re-set it here if it's an OCR specific error
                                 extractedFullText += await runOCR(imageBase64) + '\n';
                             }
                         } catch (ocrProcessErr) {
-                            // This catch handles errors from pdfToImages or unexpected errors during OCR loop
                             console.error('Error during PDF to Image conversion or OCR process:', ocrProcessErr);
                             specificErrorMessage = '⚠️ Chyba při převodu PDF na obrázky nebo při OCR: ' + ocrProcessErr.message;
-                            extractedFullText = ''; // Clear text if OCR process itself failed
+                            extractedFullText = '';
                         }
                     }
 
-                    // Final check and status message after all attempts (standard or OCR)
                     if (extractedFullText.trim().length > 10) {
                         setProcessedText(extractedFullText);
-                        setIsFromFileUpload(true); // Indicate that processedText came from a file
-                        setUploadStatusMessage('✅ Dokument úspěšně nahrán a zpracován.');
+                        setUploadStatusMessage('✅ Dokument úspěšně nahrán a text zpracován.');
                     } else {
                         setProcessedText('');
-                        setIsFromFileUpload(false); // No valid text from file
-                        // Prioritize specific error messages (from OCR process or runOCR)
                         if (specificErrorMessage) {
                             setUploadStatusMessage(specificErrorMessage);
                         } else if (uploadStatusMessage.includes('Chyba při rozpoznávání textu (OCR)')) {
-                            // runOCR already set a specific error, keep it. No need to set new message.
+                            // runOCR already set a specific error, keep it.
                         } else {
                             setUploadStatusMessage('⚠️ Z dokumentu se nepodařilo rozpoznat žádný text (nebo je příliš krátký).');
                         }
                     }
-                    setLoading(false); // Ensure loading is off
+                    setIsLoadingFile(false); // End file processing loading
                 };
                 reader.readAsArrayBuffer(file);
 
             } else if (file.type.startsWith('image/')) {
-                // Handle direct image uploads (e.g., JPEG, PNG)
                 const base64 = await convertFileToBase64(file);
                 const extractedText = await runOCR(base64);
 
                 if (extractedText.trim().length > 10) {
                     setProcessedText(extractedText);
-                    setIsFromFileUpload(true); // Indicate that processedText came from a file
                     setUploadStatusMessage('✅ Obrázek úspěšně nahrán a text rozpoznán.');
                 } else {
                     setProcessedText('');
-                    setIsFromFileUpload(false); // No valid text from file
-                    // If runOCR already set a specific error message, keep it.
                     if (!uploadStatusMessage.includes('Chyba při rozpoznávání textu (OCR)')) {
                         setUploadStatusMessage('⚠️ Nerozpoznali jsme čitelný text z obrázku (nebo je příliš krátký).');
                     }
                 }
-                setLoading(false);
-
+                setIsLoadingFile(false);
             } else {
                 setUploadStatusMessage('⚠️ Nepodporovaný typ souboru. Nahrajte PDF nebo obrázek.');
-                setLoading(false);
+                setIsLoadingFile(false);
             }
         } catch (outerError) {
             console.error('Chyba při nahrávání souboru:', outerError);
             setProcessedText('');
-            setIsFromFileUpload(false); // No valid text from file
             setUploadStatusMessage('⚠️ Nepodařilo se načíst soubor nebo došlo k vážné chybě.');
-            setLoading(false);
+            setIsLoadingFile(false);
         }
     };
 
@@ -172,25 +155,21 @@ export default function Home() {
         const file = event.target.files[0];
         if (!file) return;
 
-        setLoading(true); // General loading for any file operation
-        setTranslationInProgress(false); // Ensure translation loading is off
+        setIsLoadingFile(true); // Start file processing loading
         setProcessedText('');
-        setIsFromFileUpload(true); // Assume file upload for now, will revert if empty
         setOutput('');
-        setUploadStatusMessage('Zpracovávám nahraný text. Chvíli to může trvat.'); [cite_start]// Initial general message [cite: 3]
+        setUploadStatusMessage('Zpracovávám nahraný text. Chvíli to může trvat.'); // Initial message for capture
+        setTranslationStatusMessage(''); // Clear any translation messages
 
         try {
             const base64 = await convertFileToBase64(file);
-            const extractedText = await runOCR(base64); // runOCR sets its own error message
+            const extractedText = await runOCR(base64);
 
             if (extractedText.trim().length > 10) {
                 setProcessedText(extractedText);
-                setIsFromFileUpload(true); // Indicate that processedText came from a file
                 setUploadStatusMessage('✅ Foto z kamery úspěšně nahráno a text rozpoznán.');
             } else {
                 setProcessedText('');
-                setIsFromFileUpload(false); // No valid text from file
-                // If runOCR already set a specific error message, keep it.
                 if (!uploadStatusMessage.includes('Chyba při rozpoznávání textu (OCR)')) {
                     setUploadStatusMessage("⚠️ Nerozpoznali jsme čitelný text z fotografie (nebo je příliš krátký).");
                 }
@@ -198,34 +177,31 @@ export default function Home() {
         } catch (err) {
             console.error('Chyba při načítání z kamery:', err);
             setProcessedText('');
-            setIsFromFileUpload(false); // No valid text from file
             setUploadStatusMessage('⚠️ Nepodařilo se načíst fotografii.');
         } finally {
-            setLoading(false);
+            setIsLoadingFile(false);
         }
     };
 
     // Handles the submission of processed text to the API
     const handleSubmit = async () => {
         if (!selectedType) {
-            // This alert will not happen if the button is correctly disabled.
-            // But it's good to keep as a fallback.
             setUploadStatusMessage('⚠️ Vyberte, čemu chcete rozumět – lékařskou zprávu nebo rozbor krve.');
             return;
         }
 
-        if (!processedText) { // processedText now holds either manual input or file extracted text
+        if (!processedText || processedText.trim().length === 0) {
             setUploadStatusMessage('⚠️ Nezadal jsi žádný text ani nenahrál dokument.');
             return;
         }
 
-        setLoading(true); // General loading for any file operation
-        setTranslationInProgress(true); // Now translation is in progress
+        // Clear previous output and status messages related to upload
         setOutput('');
-        setUploadStatusMessage('Překládám do lidské řeči. Může to chvíli trvat.'); [cite_start]// Message specific to translation [cite: 3]
+        setUploadStatusMessage('');
+        setTranslationStatusMessage('Překládám do lidské řeči. Může to chvíli trvat.'); // Set translation specific message
+        setIsTranslating(true); // Start translation loading
 
         try {
-            // Define the prompt based on the selected document type
             const prompt = selectedType === 'zprava'
                 ? `🛡️ Tento překlad slouží pouze k lepšímu pochopení obsahu lékařské zprávy a nenahrazuje konzultaci s lékařem.
 
@@ -291,48 +267,34 @@ export default function Home() {
                     🛡️ Tento výstup je určen pouze pro informativní účely a nenahrazuje lékařskou konzultaci. V případě nejasností se obraťte na svého lékaře.`
             ;
 
-            if (!processedText || processedText.length < 10) {
-                setUploadStatusMessage('⚠️ Vstupní text je příliš krátký.');
-                setLoading(false);
-                setTranslationInProgress(false);
-                return;
-            }
-
-            let requestBody = {
-                prompt,
-                text: processedText // Use the consolidated processedText
-            };
-
             const response = await fetch('/api/translateGpt4o', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(requestBody),
+                body: JSON.stringify({ prompt, text: processedText }),
             });
 
             const data = await response.json();
             setOutput(data.result || '⚠️ Odpověď je prázdná.');
-            // This message is now explicitly for translation completion
-            setUploadStatusMessage('✅ Překlad úspěšně dokončen.');
+            setTranslationStatusMessage('✅ Překlad úspěšně dokončen.'); // Final success message for translation
         } catch (error) {
             console.error('Frontend error:', error);
             setOutput('⚠️ Došlo k chybě při zpracování.');
-            setUploadStatusMessage('⚠️ Došlo k chybě při zpracování požadavku.');
+            setTranslationStatusMessage('⚠️ Došlo k chybě při zpracování požadavku na překlad.');
         } finally {
-            setLoading(false);
-            setTranslationInProgress(false); // Translation has finished (success or error)
+            setIsTranslating(false); // End translation loading
         }
     };
 
     // Clears all input and output fields
     const handleClear = () => {
         setProcessedText(''); // Clear the consolidated text
-        setIsFromFileUpload(false); // Reset file upload indicator
         setOutput('');
         setUploadStatusMessage(''); // Clear any upload status messages
+        setTranslationStatusMessage(''); // Clear any translation status messages
         setConsentChecked(false);
         setGdprChecked(false);
-        setLoading(false);
-        setTranslationInProgress(false); // Clear translation loading
+        setIsLoadingFile(false);
+        setIsTranslating(false);
         setSeconds(0);
         setSelectedType(null); // Reset selected type as well
     };
@@ -401,7 +363,7 @@ export default function Home() {
                                 selectedType === 'zprava' ? 'bg-blue-600 text-white font-bold' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
                             }`}
                             onClick={() => setSelectedType('zprava')}
-                            disabled={loading}
+                            disabled={isLoadingFile || isTranslating}
                         >
                             <span className="text-xl mr-2">📄</span> Lékařská zpráva
                         </button>
@@ -410,7 +372,7 @@ export default function Home() {
                                 selectedType === 'rozbor' ? 'bg-blue-600 text-white font-bold' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
                             }`}
                             onClick={() => setSelectedType('rozbor')}
-                            disabled={loading}
+                            disabled={isLoadingFile || isTranslating}
                         >
                             <span className="text-xl mr-2">💉</span> Rozbor krve
                         </button>
@@ -420,18 +382,17 @@ export default function Home() {
                 {/* Section 2: Text input / upload buttons */}
                 <div className="bg-gray-50 p-6 rounded-lg shadow-inner mb-8">
                     <p className="text-center text-gray-700 font-semibold text-lg mb-6">2. Vložte text nebo nahrajte dokument:</p>
-                    {/* Textarea for manual input or to show processed text if not from file */}
+                    {/* Textarea for manual input or to show processed text */}
                     <textarea
                         placeholder={"Sem vložte text ručně nebo nahrajte dokument pomocí tlačítek níže."}
                         className="p-4 border-2 border-dashed border-gray-300 rounded-lg bg-white shadow-sm resize-none w-full min-h-[160px] mb-6 focus:outline-none focus:border-blue-500 transition-colors"
                         rows={8}
-                        value={processedText} // Always bind to processedText
+                        value={processedText}
                         onChange={(e) => {
                             setProcessedText(e.target.value);
-                            setIsFromFileUpload(false); // Any manual input means it's no longer from file
                             setUploadStatusMessage(''); // Clear status message on manual input
                         }}
-                        disabled={loading}
+                        disabled={isLoadingFile || isTranslating}
                     />
 
                     {/* Hidden file inputs */}
@@ -456,22 +417,22 @@ export default function Home() {
                         <button
                             className="flex-1 bg-blue-500 text-white py-3 rounded-lg text-lg font-semibold hover:bg-blue-600 transition shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
                             onClick={() => fileUploadRef.current.click()}
-                            disabled={loading}
+                            disabled={isLoadingFile || isTranslating}
                         >
                             <span className="mr-2">📁</span> Nahrát dokument (PDF/Obrázek)
                         </button>
                         <button
                             className="flex-1 bg-blue-500 text-white py-3 rounded-lg text-lg font-semibold hover:bg-blue-600 transition shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
                             onClick={() => cameraCaptureRef.current.click()}
-                            disabled={loading}
+                            disabled={isLoadingFile || isTranslating}
                         >
                             <span className="mr-2">📸</span> Vyfotit dokument mobilem
                         </button>
                     </div>
                 </div>
 
-                [cite_start]{/* Status message display for upload/processing - Displayed after upload buttons [cite: 3] */}
-                {uploadStatusMessage && !translationInProgress && ( // Only show if not in translation loading state
+                {/* Status message display for file upload/OCR - Displayed after upload buttons */}
+                {uploadStatusMessage && (
                     <div className={`p-4 rounded-lg mb-8 text-base font-medium ${
                         uploadStatusMessage.startsWith('✅') ? 'bg-green-100 text-green-800 border border-green-200' :
                         (uploadStatusMessage.startsWith('⚠️') ? 'bg-red-100 text-red-800 border border-red-200' :
@@ -491,7 +452,7 @@ export default function Home() {
                                 className="form-checkbox h-5 w-5 text-blue-600 rounded mr-3"
                                 checked={consentChecked}
                                 onChange={(e) => setConsentChecked(e.target.checked)}
-                                disabled={loading || translationInProgress} // Disable if any loading is active
+                                disabled={isLoadingFile || isTranslating}
                             />
                             <span className="leading-tight">Rozumím, že se nejedná o profesionální lékařskou radu.</span>
                         </label>
@@ -501,7 +462,7 @@ export default function Home() {
                                 className="form-checkbox h-5 w-5 text-blue-600 rounded mr-3"
                                 checked={gdprChecked}
                                 onChange={(e) => setGdprChecked(e.target.checked)}
-                                disabled={loading || translationInProgress} // Disable if any loading is active
+                                disabled={isLoadingFile || isTranslating}
                             />
                             <span className="leading-tight">Souhlasím se zpracováním vloženého dokumentu nebo textu. Data nejsou ukládána.</span>
                         </label>
@@ -512,14 +473,14 @@ export default function Home() {
                 <div className="flex flex-col sm:flex-row gap-4 mb-8">
                     <button
                         className={`flex-1 py-4 rounded-xl text-xl font-bold transition-all duration-200 ease-in-out transform hover:-translate-y-1 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 ${
-                            selectedType && consentChecked && gdprChecked && processedText.trim().length > 0 && !loading && !translationInProgress // Conditions for active button
+                            selectedType && consentChecked && gdprChecked && processedText.trim().length > 0 && !isLoadingFile && !isTranslating
                                 ? 'bg-blue-600 text-white hover:bg-blue-700'
                                 : 'bg-gray-400 text-white cursor-not-allowed'
                         }`}
                         onClick={handleSubmit}
-                        disabled={!selectedType || !consentChecked || !gdprChecked || processedText.trim().length === 0 || loading || translationInProgress} // Disable conditions
+                        disabled={!selectedType || !consentChecked || !gdprChecked || processedText.trim().length === 0 || isLoadingFile || isTranslating}
                     >
-                        {translationInProgress ? ( // Check translationInProgress for spinner
+                        {isTranslating ? (
                             <span className="flex items-center justify-center">
                                 <span className="animate-spin rounded-full h-6 w-6 border-b-2 border-white mr-3"></span>
                                 Překládám...
@@ -531,17 +492,17 @@ export default function Home() {
 
                     <button
                         className={`flex-1 py-4 rounded-xl text-xl font-bold transition-all duration-200 ease-in-out transform hover:-translate-y-1 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-50 ${
-                            loading || translationInProgress ? 'bg-gray-400 text-white cursor-not-allowed' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            isLoadingFile || isTranslating ? 'bg-gray-400 text-white cursor-not-allowed' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                         }`}
                         onClick={handleClear}
-                        disabled={loading || translationInProgress} // Disable if any loading is active
+                        disabled={isLoadingFile || isTranslating}
                     >
                         Vymazat vše
                     </button>
                 </div>
 
-                [cite_start]{/* Loading indicator for translation (only when translationInProgress is true) [cite: 3] */}
-                {translationInProgress && ( // This block only appears if translation is in progress
+                {/* Loading indicator for translation (only when isTranslating is true) */}
+                {isTranslating && (
                     <div className="flex flex-col items-center text-blue-700 text-base mt-4">
                         <p className="mb-2">⏳ Překlad může trvat až 60 vteřin. Díky za trpělivost.</p>
                         <div className="flex items-center gap-2">
@@ -550,6 +511,17 @@ export default function Home() {
                         </div>
                     </div>
                 )}
+
+                {/* Translation status message (after translation attempt) */}
+                {translationStatusMessage && !isTranslating && (
+                    <div className={`p-4 rounded-lg mt-4 text-base font-medium ${
+                        translationStatusMessage.startsWith('✅') ? 'bg-green-100 text-green-800 border border-green-200' :
+                        'bg-red-100 text-red-800 border border-red-200'
+                    }`}>
+                        {translationStatusMessage}
+                    </div>
+                )}
+
 
                 {/* Output section */}
                 {output && (
