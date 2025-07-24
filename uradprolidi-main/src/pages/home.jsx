@@ -57,6 +57,11 @@ const Home = () => {
             setStatusMessage('⚠️ Nepodařilo se spustit OCR.');
             return '';
           }
+            if (!window.Tesseract || typeof window.Tesseract.recognize !== 'function') {
+              console.error("Tesseract is not properly loaded.");
+              setStatusMessage("❌ Tesseract se nenačetl správně.");
+              return '';
+            }
         };
 
     // Consolidated handler for all file uploads (PDF and general images)
