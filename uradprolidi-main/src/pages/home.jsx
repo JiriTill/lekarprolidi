@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import * as pdfjsLib from 'pdfjs-dist/build/pdf';
+import * => pdfjsLib from 'pdfjs-dist/build/pdf';
 import FeedbackForm from '../components/FeedbackForm';
 import { Link } from 'react-router-dom';
 import Footer from '../components/Footer'; // Keep Footer import
@@ -468,6 +468,17 @@ export default function Home() {
                     </div>
                 </div>
 
+                {/* Status message display - MOVED HERE */}
+                {uploadStatusMessage && (
+                    <div className={`p-4 rounded-lg mb-8 text-base font-medium ${ /* Larger padding, mb, font */
+                        uploadStatusMessage.startsWith('✅') ? 'bg-green-100 text-green-800 border border-green-200' :
+                        (uploadStatusMessage.startsWith('⚠️') ? 'bg-red-100 text-red-800 border border-red-200' :
+                        'bg-orange-100 text-orange-800 border border-orange-200')
+                    }`}>
+                        {uploadStatusMessage}
+                    </div>
+                )}
+
                 {/* Section 3: Consent checkboxes */}
                 <div className="bg-gray-50 p-6 rounded-lg shadow-inner mb-8"> {/* Card-like section */}
                     <p className="text-center text-gray-700 font-semibold text-lg mb-6">3. Souhlas s podmínkami:</p>
@@ -494,17 +505,6 @@ export default function Home() {
                         </label>
                     </div>
                 </div>
-
-                {/* Status message display */}
-                {uploadStatusMessage && (
-                    <div className={`p-4 rounded-lg mb-8 text-base font-medium ${ /* Larger padding, mb, font */
-                        uploadStatusMessage.startsWith('✅') ? 'bg-green-100 text-green-800 border border-green-200' :
-                        (uploadStatusMessage.startsWith('⚠️') ? 'bg-red-100 text-red-800 border border-red-200' :
-                        'bg-orange-100 text-orange-800 border border-orange-200')
-                    }`}>
-                        {uploadStatusMessage}
-                    </div>
-                )}
 
                 {/* Submit and Clear buttons */}
                 <div className="flex flex-col sm:flex-row gap-4 mb-8"> {/* Responsive layout, more mb */}
