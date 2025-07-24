@@ -30,9 +30,12 @@ const Home = () => {
     const [tesseractWorker, setTesseractWorker] = useState(null);
     // State to indicate if Tesseract worker is ready (important for disabling buttons)
     const [isTesseractReady, setIsTesseractReady] = useState(false);
+    // State for Tesseract initialization errors
+    const [errorMessage, setErrorMessage] = useState(null); // <-- ADDED THIS STATE
 
     // useEffect to initialize Tesseract worker once
     useEffect(() => {
+        let workerInstance; // Declare workerInstance here for cleanup
         const initializeTesseract = async () => {
             try {
                 // Ensure the worker is not already created (e.g., during fast refresh)
@@ -42,24 +45,29 @@ const Home = () => {
                     return;
                 }
 
+                setStatusMessage('Initializing Tesseract.js worker...');
                 console.log('Initializing Tesseract.js worker...');
-                const worker = Tesseract.createWorker({
+
+                workerInstance = Tesseract.createWorker({
                     workerPath: '/tesseract-data/worker.min.js',
                     langPath: '/tesseract-data/',
                     corePath: '/tesseract-data/tesseract-core.wasm.js',
-                    // logLevel: 'debug', // Uncomment for detailed Tesseract logs in console
+                    logLevel: 'debug', // <-- ENABLED DEBUG LOGGING
                 });
-                await worker.load();
-                await worker.loadLanguage('ces');
-                await worker.initialize('ces');
-                setTesseractWorker(worker);
+
+                await workerInstance.load();
+                await workerInstance.loadLanguage('ces');
+                await workerInstance.initialize('ces');
+
+                setTesseractWorker(workerInstance);
                 setIsTesseractReady(true); // Mark Tesseract as ready
+                setStatusMessage('Tesseract.js worker ready.');
                 console.log('Tesseract.js worker initialized successfully.');
             } catch (error) {
                 console.error('Failed to initialize Tesseract.js worker:', error);
-                setErrorMessage('Chyba při inicializaci OCR enginu. Zkuste prosím obnovit stránku.');
-                // You might want to display this error in statusMessage or a dedicated error state
+                setErrorMessage('Chyba při inicializaci OCR enginu. Zkuste prosím obnovit stránku.'); // <-- USING THE NEW STATE
                 setStatusMessage('⚠️ Chyba při inicializaci OCR enginu. Zkuste prosím obnovit stránku.');
+                setIsTesseractReady(false); // Ensure button remains disabled
             }
         };
 
@@ -67,9 +75,9 @@ const Home = () => {
 
         // Cleanup function for the effect
         return () => {
-            if (tesseractWorker) { // Check if worker exists before terminating
+            if (workerInstance) { // Use workerInstance declared in this effect scope
                 console.log('Terminating Tesseract.js worker...');
-                tesseractWorker.terminate();
+                workerInstance.terminate();
             }
         };
     }, []); // Empty dependency array means this runs once on mount/unmount
@@ -332,7 +340,7 @@ const Home = () => {
                     Na závěr připoj poznámku:
 
                     🛡️ Tento výstup je určen pouze pro informativní účely a nenahrazuje lékařskou konzultaci. V případě nejasností se obraťte na svého lékaře.`
-            ;
+                ;
 
             const response = await fetch('/api/translateGpt4o', {
                 method: 'POST',
@@ -363,6 +371,7 @@ const Home = () => {
         setIsLoading(false);
         setSeconds(0);
         setSelectedType(null); // Reset selected type as well
+        setErrorMessage(null); // Clear any Tesseract errors on clear
     };
 
     // Renders the structured output from the API response
@@ -550,7 +559,7 @@ const Home = () => {
                 {/* Submit and Clear buttons */}
                 <div className="flex flex-col sm:flex-row gap-4 mb-8">
                     <button
-                        className={`flex-1 py-4 rounded-xl text-xl font-bold transition-all duration-200 ease-in-out transform hover:-translate-y-1 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 ${
+                        className={`flex-1 py-4 rounded-xl text-xl font-bold transition-all duration-200 ease-in-out transform hover:-translate-y-1 hover:shadow-lg focus:outline-none focus:ring-2 focus://focus:ring-blue-500 focus:ring-opacity-50 ${
                             selectedType && consentChecked && gdprChecked && (inputText.trim().length > 0 || uploadedFileTextForApi.trim().length > 0) && !isLoading
                                 ? 'bg-blue-600 text-white hover:bg-blue-700'
                                 : 'bg-gray-400 text-white cursor-not-allowed'
@@ -594,4 +603,4 @@ const Home = () => {
     );
 }
 
-export default Home; // Export the single Home component
+export default Home;
