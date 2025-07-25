@@ -92,6 +92,12 @@ const Home = () => {
         });
     };
 
+
+    useEffect(() => {
+          console.log('fileUploadRef.current:', fileUploadRef.current);
+          initializeTesseract();
+        }, [initializeTesseract]);
+    
     // OCR function using the initialized Tesseract.js worker <--- MODIFIED runOCR
     const runOCR = async (imageBase64) => {
         if (!worker) { // Ensure the worker is initialized before attempting OCR
@@ -387,8 +393,8 @@ const Home = () => {
         return msg.includes('Zpracovávám') || msg.includes('Překládám') || msg.includes('zkouším OCR') || msg.includes('Rozpoznávám text') || msg.includes('Načítám OCR engine') || msg.includes('Inicializuji OCR engine');
     };
 
-    return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col items-center p-4">
+        return (
+          <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col items-center p-4">
             <div className="w-full max-w-3xl bg-white p-8 rounded-xl shadow-2xl my-8">
                 <h1 className="text-5xl font-extrabold text-center text-blue-800 mb-4 tracking-tight">Lékař pro lidi</h1>
                 <p className="mb-10 text-center text-gray-700 text-xl leading-relaxed">
@@ -445,55 +451,60 @@ const Home = () => {
                 {/* Section 2: Text input / upload buttons */}
                 <div className="bg-gray-50 p-6 rounded-lg shadow-inner mb-8">
                     <p className="text-center text-gray-700 font-semibold text-lg mb-6">2. Vložte text nebo nahrajte dokument:</p>
-                    {/* Textarea for manual input only */}
                     <textarea
-                        placeholder={"Sem vložte text ručně nebo nahrajte dokument pomocí tlačítek níže."}
-                        className="p-4 border-2 border-dashed border-gray-300 rounded-lg bg-white shadow-sm resize-none w-full min-h-[160px] mb-6 focus:outline-none focus:border-blue-500 transition-colors"
-                        rows={8}
-                        value={inputText} // Only bind to inputText
-                        onChange={(e) => {
-                            setInputText(e.target.value);
-                            setUploadedFileTextForApi(''); // Clear file content if user starts typing manually
-                            setStatusMessage(''); // Clear any previous status message
-                        }}
-                        disabled={isLoading}
+                      placeholder="Sem vložte text ručně nebo nahrajte dokument pomocí tlačítek níže."
+                      className="p-4 border-2 border-dashed border-gray-300 rounded-lg bg-white shadow-sm resize-none w-full min-h-[160px] mb-6 focus:outline-none focus:border-blue-500 transition-colors"
+                      rows={8}
+                      value={inputText}
+                      onChange={(e) => {
+                        setInputText(e.target.value);
+                        setUploadedFileTextForApi('');
+                        setStatusMessage('');
+                      }}
+                      disabled={isLoading}
                     />
-
-                    {/* Hidden file inputs */}
+            
                     <input
-                        type="file"
-                        accept=".pdf,image/*"
-                        onChange={handleFileUpload}
-                        ref={fileUploadRef}
-                        style={{ display: 'none' }}
+                      type="file"
+                      accept=".pdf,image/*"
+                      onChange={handleFileUpload}
+                      ref={fileUploadRef}
+                      style={{ display: 'none' }}
                     />
                     <input
-                        type="file"
-                        accept="image/*"
-                        capture="environment" // Suggests front or rear camera
-                        onChange={handleCameraCapture}
-                        ref={cameraCaptureRef}
-                        style={{ display: 'none' }}
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      onChange={handleCameraCapture}
+                      ref={cameraCaptureRef}
+                      style={{ display: 'none' }}
                     />
-
-                    {/* Upload buttons */}
+            
                     <div className="flex flex-col sm:flex-row gap-4">
-                        <button
-                            className="flex-1 bg-blue-500 text-white py-3 rounded-lg text-lg font-semibold hover:bg-blue-600 transition shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
-                            onClick={() => fileUploadRef.current.click()}
-                            disabled={isLoading || !isTesseractReady} // Disable if Tesseract is not ready
-                        >
-                            <span className="mr-2">📁</span> Nahrát dokument (PDF/Obrázek)
-                        </button>
-                        <button
-                            className="flex-1 bg-blue-500 text-white py-3 rounded-lg text-lg font-semibold hover:bg-blue-600 transition shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
-                            onClick={() => cameraCaptureRef.current.click()}
-                            disabled={isLoading || !isTesseractReady} // Disable if Tesseract is not ready
-                        >
-                            <span className="mr-2">📸</span> Vyfotit dokument mobilem
-                        </button>
+                      <button
+                        className="flex-1 bg-blue-500 text-white py-3 rounded-lg text-lg font-semibold hover:bg-blue-600 transition shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
+                        onClick={() => {
+                          console.log('Button clicked, triggering file input');
+                          if (fileUploadRef.current) {
+                            fileUploadRef.current.click();
+                          } else {
+                            console.error('fileUploadRef.current is null, input not found in DOM');
+                            setStatusMessage('⚠️ Chyba: Souborový vstup není dostupný. Zkuste obnovit stránku.');
+                          }
+                        }}
+                        disabled={isLoading || !isTesseractReady}
+                      >
+                        <span className="mr-2">📁</span> Nahrát dokument (PDF/Obrázek)
+                      </button>
+                      <button
+                        className="flex-1 bg-blue-500 text-white py-3 rounded-lg text-lg font-semibold hover:bg-blue-600 transition shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
+                        onClick={() => cameraCaptureRef.current.click()}
+                        disabled={isLoading || !isTesseractReady}
+                      >
+                        <span className="mr-2">📸</span> Vyfotit dokument mobilem
+                      </button>
                     </div>
-                </div>
+                  </div>
 
                 {/* Status message display (including loading animation for processing messages) */}
                 {statusMessage && (
