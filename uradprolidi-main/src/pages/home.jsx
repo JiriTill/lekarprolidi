@@ -29,54 +29,71 @@ const Home = () => {
     const cameraCaptureRef = useRef(null);
 
     // Effect to initialize Tesseract.js worker <--- THIS ENTIRE useEffect BLOCK IS CRUCIAL
-    useEffect(() => {
-        const loadTesseractWorker = async () => {
+         useEffect(() => {
+          const loadTesseractWorker = async () => {
             setStatusMessage('Načítám OCR engine...');
-            setIsTesseractReady(false); // Ensure false until fully ready
+            setIsTesseractReady(false);
             console.log('Attempting to create Tesseract worker...');
+        
+            const timeoutPromise = new Promise((_, reject) => {
+              setTimeout(() => reject(new Error('Tesseract initialization timed out')), 30000);
+            });
+        
             try {
-                const newWorker = await createWorker({
-                    logger: m => {
-                        console.log('Tesseract Logger:', m);
-                        if (m.status === 'recognizing text') {
-                            setStatusMessage(`📷 Rozpoznávám text: ${Math.round(m.progress * 100)}%`);
-                        } else if (m.status === 'loading tesseract core' || m.status === 'loading language traineddata') {
-                            setStatusMessage(`Načítám OCR engine: ${m.status.replace('loading ', '').replace('tesseract core', 'jádro Tesseractu').replace('language traineddata', 'jazyková data')}... ${Math.round(m.progress * 100)}%`);
-                        } else if (m.status === 'initializing tesseract') {
-                            setStatusMessage('Inicializuji OCR engine...');
-                        }
-                    },
-                    workerPath: '/tesseract-data/worker.min.js',
-                    corePath: '/tesseract-data/tesseract-core.wasm.js',
-                });
-
-                console.log('Worker created, attempting to load...');
-                await newWorker.load();
-                console.log('Worker loaded, attempting to load language...');
-                await newWorker.loadLanguage('eng');
-                console.log('Language loaded, attempting to initialize...');
-                await newWorker.initialize('eng');
-                console.log('Tesseract worker fully initialized.');
-
-                setWorker(newWorker);
-                setIsTesseractReady(true);
-                setStatusMessage('OCR engine připraven.');
+              const newWorker = await Promise.race([
+                createWorker({
+                  logger: m => {
+                    console.log('Tesseract Logger:', m);
+                    if (m.status === 'recognizing text') {
+                      setStatusMessage(`📷 Rozpoznávám text: ${Math.round(m.progress * 100)}%`);
+                    } else if (m.status === 'loading tesseract core') {
+                      setStatusMessage(`Načítám OCR engine: Jádro Tesseractu... ${Math.round(m.progress * 100)}%`);
+                    } else if (m.status === 'loading language traineddata') {
+                      setStatusMessage(`Načítám OCR engine: Jazyková data... ${Math.round(m.progress * 100)}%`);
+                    } else if (m.status === 'initializing tesseract') {
+                      setStatusMessage('Inicializuji OCR engine...');
+                    } else {
+                      setStatusMessage(`Načítám OCR engine: ${m.status}... ${Math.round(m.progress * 100)}%`);
+                    }
+                  },
+                  workerPath: '/tesseract-data/worker.min.js',
+                  corePath: '/tesseract-data/tesseract-core.wasm.js',
+                }),
+                timeoutPromise,
+              ]);
+        
+              console.log('Worker created successfully.');
+              await newWorker.load();
+              console.log('Tesseract core loaded successfully.');
+              await newWorker.loadLanguage('ces');
+              console.log('English language data loaded successfully.');
+              await newWorker.initialize('ces');
+              console.log('Tesseract initialized successfully.');
+        
+              setWorker(newWorker);
+              setIsTesseractReady(true);
+              setStatusMessage('OCR engine připraven.');
             } catch (error) {
-                console.error('Failed to load Tesseract worker:', error);
-                setStatusMessage('❌ Nepodařilo se načíst OCR engine. Zkuste obnovit stránku.');
-                setIsTesseractReady(false);
+              console.error('Tesseract initialization failed:', error);
+              let errorMessage = '❌ Nepodařilo se načíst OCR engine. Můžete pokračovat zadáním textu ručně do textového pole.';
+              if (error.message.includes('timeout')) {
+                errorMessage = '❌ Načítání OCR engine trvalo příliš dlouho. Zkuste obnovit stránku nebo použít ruční zadání textu.';
+              } else if (error.message.includes('network')) {
+                errorMessage = '❌ Problém se sítí při načítání OCR engine. Zkontrolujte připojení a zkuste znovu.';
+              }
+              setStatusMessage(errorMessage);
+              setIsTesseractReady(false);
             }
-        };
-
-        loadTesseractWorker();
-
-        // Cleanup function to terminate the worker when the component unmounts
-        return () => {
+          };
+        
+          loadTesseractWorker();
+        
+          return () => {
             if (worker) {
-                worker.terminate();
+              worker.terminate();
             }
-        };
-    }, []); // Empty dependency array ensures this runs once on mount
+          };
+        }, []);
 
     // Function to convert File object to Base64 for OCR processing
     const convertFileToBase64 = (file) => {
