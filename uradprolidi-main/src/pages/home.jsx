@@ -50,12 +50,6 @@ const Home = () => {
             reader.onerror = (error) => reject(error);
         });
     };
-
-
-    useEffect(() => {
-          console.log('fileUploadRef.current:', fileUploadRef.current);
-          initializeTesseract();
-        }, [initializeTesseract]);
     
     // OCR function using the initialized Tesseract.js worker <--- MODIFIED runOCR
         const runOCR = async (imageBase64) => {
