@@ -36,7 +36,7 @@ const Home = () => {
             
                 try {
                     const newWorker = await createWorker({
-                        workerPath: '/tesseract-data/worker.min.js',
+                        workerPath: '/worker.min.js', // Moved to root
                         langPath: '/tesseract-data/',
                         logger: m => {
                             if (m.status === 'recognizing text') {
