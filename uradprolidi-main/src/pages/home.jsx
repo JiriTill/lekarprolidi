@@ -25,6 +25,22 @@ const Home = () => {
     const fileUploadRef = useRef(null);
     const cameraCaptureRef = useRef(null);
 
+        useEffect(() => {
+            if (typeof window.Tesseract === 'undefined') {
+                const script = document.createElement('script');
+                script.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@2.1.5/dist/tesseract.min.js';
+                script.async = true;
+                script.onload = () => {
+                    console.log('✅ Tesseract loaded');
+                };
+                script.onerror = () => {
+                    setStatusMessage('❌ Tesseract knihovna se nepodařilo načíst.');
+                };
+                document.body.appendChild(script);
+            }
+        }, []);
+
+    
     // Function to convert File object to Base64 for OCR processing
     const convertFileToBase64 = (file) => {
         return new Promise((resolve, reject) => {
@@ -43,6 +59,10 @@ const Home = () => {
     
     // OCR function using the initialized Tesseract.js worker <--- MODIFIED runOCR
         const runOCR = async (imageBase64) => {
+            if (typeof window.Tesseract === 'undefined') {
+                setStatusMessage('❌ Tesseract není načten. Zkuste prosím obnovit stránku za chvíli.');
+                return '';
+                }
             setStatusMessage('📷 Spouštím rozpoznávání textu (OCR)...');
             try {
                 const result = await window.Tesseract.recognize(
