@@ -86,7 +86,6 @@ const Home = () => {
     const handleFileUpload = async (event) => {
         const file = event.target.files[0];
         if (!file) return;
-        }
 
         setIsLoading(true); // Start general loading for file processing
         setUploadedFileTextForApi(''); // Clear previous file content for API
@@ -176,7 +175,6 @@ const Home = () => {
     const handleCameraCapture = async (event) => {
         const file = event.target.files[0];
         if (!file) return;
-        }
 
         setIsLoading(true); // Start general loading for file processing
         setUploadedFileTextForApi('');
