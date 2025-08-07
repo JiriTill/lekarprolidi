@@ -2,11 +2,6 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import FeedbackForm from '../components/FeedbackForm';
 import { Link } from 'react-router-dom';
 import Footer from '../components/Footer';
-import { pdfToImages } from '../utils/pdfToImages';
-import * as pdfjsLib from 'pdfjs-dist/build/pdf';
-
-// Configure PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = `/pdfjs/pdf.worker.mjs`;
 
 // Combined and corrected Home component
 const Home = () => {
@@ -95,93 +90,39 @@ const Home = () => {
 
 
     // Consolidated handler for all file uploads (PDF and general images)
-    const handleFileUpload = async (event) => {
-        const file = event.target.files[0];
-        if (!file) return;
-
-        setIsLoading(true); // Start general loading for file processing
-        setUploadedFileTextForApi(''); // Clear previous file content for API
-        setInputText(''); // Clear manual input as a file is now being processed
-        setOutput(''); // Clear previous output
-        setStatusMessage('Zpracovávám nahraný dokument. Chvíli to může trvat.'); // Initial processing message
-
-        try {
-            if (file.type === 'application/pdf') {
-                const reader = new FileReader();
-                reader.onload = async () => {
-                    let extractedFullText = '';
-                    let specificErrorMessage = '';
-
-                    try {
-                        const loadingTask = pdfjsLib.getDocument({ data: reader.result });
-                        const pdf = await loadingTask.promise;
-                        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-                            const page = await pdf.getPage(pageNum);
-                            const content = await page.getTextContent();
-                            extractedFullText += content.items.map((item) => item.str).join(' ') + '\n';
-                        }
-                    } catch (stdPdfErr) {
-                        console.warn('PDF standard text extraction failed, attempting OCR:', stdPdfErr);
-                        setStatusMessage('PDF neobsahuje čitelný text, zkouším OCR...'); // Intermediate message
-
-                        try {
-                            const images = await pdfToImages(file);
-                            if (!images || images.length === 0) {
-                                throw new Error("Nepodařilo se převést PDF na obrázky pro OCR.");
-                            }
-                            for (const imageBase64 of images) {
-                                extractedFullText += await runOCR(imageBase64) + '\n';
-                            }
-                        } catch (ocrProcessErr) {
-                            console.error('Error during PDF to Image conversion or OCR process:', ocrProcessErr);
-                            specificErrorMessage = '⚠️ Chyba při převodu PDF na obrázky nebo při OCR: ' + ocrProcessErr.message;
-                            extractedFullText = '';
-                        }
-                    }
-
-                    if (extractedFullText.trim().length > 10) {
-                        setUploadedFileTextForApi(extractedFullText);
-                        setStatusMessage('✅ Dokument úspěšně nahrán a zpracován.');
-                    } else {
-                        setUploadedFileTextForApi('');
-                        if (specificErrorMessage) {
-                            setStatusMessage(specificErrorMessage);
-                        } else if (statusMessage.includes('Chyba při rozpoznávání textu (OCR)')) {
-                            // runOCR already set a specific error, keep it.
+                    const handleFileUpload = async (event) => {
+                      const file = event.target.files[0];
+                      if (!file) return;
+                    
+                      if (!file.type.startsWith('image/')) {
+                        setStatusMessage('⚠️ Nepodporovaný typ souboru. Nahrajte obrázek (JPG nebo PNG).');
+                        return;
+                      }
+                    
+                      setIsLoading(true);
+                      setUploadedFileTextForApi('');
+                      setInputText('');
+                      setOutput('');
+                      setStatusMessage('Zpracovávám obrázek. Může to chvíli trvat.');
+                    
+                      try {
+                        const base64 = await convertFileToBase64(file);
+                        const extractedText = await runOCR(base64);
+                    
+                        if (extractedText.trim().length > 10) {
+                          setUploadedFileTextForApi(extractedText);
+                          setStatusMessage('✅ Obrázek úspěšně nahrán a text rozpoznán.');
                         } else {
-                            setStatusMessage('⚠️ Z dokumentu se nepodařilo rozpoznat žádný text (nebo je příliš krátký).');
+                          setUploadedFileTextForApi('');
+                          setStatusMessage('⚠️ Nerozpoznali jsme čitelný text z obrázku (nebo je příliš krátký).');
                         }
-                    }
-                    setIsLoading(false); // End loading
-                };
-                reader.readAsArrayBuffer(file);
-
-            } else if (file.type.startsWith('image/')) {
-                const base64 = await convertFileToBase64(file);
-                const extractedText = await runOCR(base64);
-
-                if (extractedText.trim().length > 10) {
-                    setUploadedFileTextForApi(extractedText);
-                    setStatusMessage('✅ Obrázek úspěšně nahrán a text rozpoznán.');
-                } else {
-                    setUploadedFileTextForApi('');
-                    if (!statusMessage.includes('Chyba při rozpoznávání textu (OCR)')) {
-                        setStatusMessage('⚠️ Nerozpoznali jsme čitelný text z obrázku (nebo je příliš krátký).');
-                    }
-                }
-                setIsLoading(false);
-
-            } else {
-                setStatusMessage('⚠️ Nepodporovaný typ souboru. Nahrajte PDF nebo obrázek.');
-                setIsLoading(false);
-            }
-        } catch (outerError) {
-            console.error('Chyba při nahrávání souboru:', outerError);
-            setUploadedFileTextForApi('');
-            setStatusMessage('⚠️ Nepodařilo se načíst soubor nebo došlo k vážné chybě.');
-            setIsLoading(false);
-        }
-    };
+                      } catch (error) {
+                        console.error('Chyba při zpracování obrázku:', error);
+                        setStatusMessage('⚠️ Nastala chyba při zpracování obrázku.');
+                      } finally {
+                        setIsLoading(false);
+                      }
+                    };
 
     // Handler specifically for camera capture (mobile devices)
     const handleCameraCapture = async (event) => {
@@ -438,7 +379,7 @@ const Home = () => {
             
                     <input
                       type="file"
-                      accept=".pdf,image/*"
+                      accept="image/*"
                       onChange={handleFileUpload}
                       ref={fileUploadRef}
                       style={{ display: 'none' }}
@@ -465,7 +406,7 @@ const Home = () => {
                           }
                         }}
                       >
-                        <span className="mr-2">📁</span> Nahrát dokument (PDF/Obrázek)
+                        <span className="mr-2">📁</span> Nahrát dokument (Obrázek .jpg, .jpeg, .png)
                       </button>
                       <button
                         className="flex-1 bg-blue-500 text-white py-3 rounded-lg text-lg font-semibold hover:bg-blue-600 transition shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
