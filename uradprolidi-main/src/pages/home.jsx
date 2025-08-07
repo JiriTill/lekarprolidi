@@ -86,10 +86,6 @@ const Home = () => {
     const handleFileUpload = async (event) => {
         const file = event.target.files[0];
         if (!file) return;
-
-        if (!isTesseractReady) {
-            setStatusMessage('⚠️ OCR engine se stále načítá. Zkuste prosím za chvíli.');
-            return;
         }
 
         setIsLoading(true); // Start general loading for file processing
@@ -180,10 +176,6 @@ const Home = () => {
     const handleCameraCapture = async (event) => {
         const file = event.target.files[0];
         if (!file) return;
-
-        if (!isTesseractReady) {
-            setStatusMessage('⚠️ OCR engine se stále načítá. Zkuste prosím za chvíli.');
-            return;
         }
 
         setIsLoading(true); // Start general loading for file processing
@@ -476,7 +468,7 @@ const Home = () => {
                         (statusMessage.startsWith('⚠️') ? 'bg-red-100 text-red-800 border border-red-200' :
                         'bg-blue-100 text-blue-800 border border-blue-200') // General processing messages
                     }`}>
-                        {(isLoading || (!isTesseractReady && statusMessage.includes('Načítám OCR engine'))) && isProcessingMessage(statusMessage) && (
+                        {isLoading && isProcessingMessage(statusMessage) && (
                             <span className="animate-spin text-xl">🔄</span>
                         )}
                         <span>{statusMessage}</span>
