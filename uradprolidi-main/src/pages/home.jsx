@@ -217,23 +217,28 @@ const Home = () => {
     };
 
     // Handles the submission of processed text to the API
-    const handleSubmit = async () => {
-        if (!selectedType) {
-            setStatusMessage('⚠️ Vyberte, čemu chcete rozumět – lékařskou zprávu nebo rozbor krve.');
-            return;
-        }
-
-        // Determine which text to send to the API: file content if available, else manual input
-        const finalTextToSend = uploadedFileTextForApi || inputText;
-
-        if (!finalTextToSend || finalTextToSend.trim().length === 0) {
-            setStatusMessage('⚠️ Nezadal jsi žádný text ani nenahrál dokument.');
-            return;
-        }
-
-        setOutput(''); // Clear previous output
-        setStatusMessage('Překládám do lidské řeči. Může to chvíli trvat.'); // Set translation specific message
-        setIsLoading(true); // Start general loading for translation
+        const handleSubmit = async () => {
+            if (!selectedType) {
+                setStatusMessage('⚠️ Vyberte, čemu chcete rozumět – lékařskou zprávu nebo rozbor krve.');
+                return;
+            }
+        
+            const finalTextToSend = uploadedFileTextForApi || inputText;
+        
+            if (!finalTextToSend || finalTextToSend.trim().length === 0) {
+                setStatusMessage('⚠️ Nezadal jsi žádný text ani nenahrál dokument.');
+                return;
+            }
+        
+            setOutput('');
+            setIsLoading(true);
+        
+            let secondsElapsed = 0;
+        
+            const countdownInterval = setInterval(() => {
+                secondsElapsed++;
+                setStatusMessage(`📤 Překládám do lidské řeči. Může to chvíli trvat: (${secondsElapsed}s)`);
+            }, 1000);
 
         try {
             const prompt = selectedType === 'zprava'
@@ -298,23 +303,24 @@ const Home = () => {
                     🛡️ Tento výstup je určen pouze pro informativní účely a nenahrazuje lékařskou konzultaci. V případě nejasností se obraťte na svého lékaře.`
                 ;
 
-            const response = await fetch('/api/translateGpt4o', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ prompt, text: finalTextToSend }),
-            });
-
-            const data = await response.json();
-            setOutput(data.result || '⚠️ Odpověď je prázdná.');
-            setStatusMessage('✅ Překlad úspěšně dokončen.'); // Final success message for translation
-        } catch (error) {
-            console.error('Frontend error:', error);
-            setOutput('⚠️ Došlo k chybě při zpracování.');
-            setStatusMessage('⚠️ Došlo k chybě při zpracování požadavku na překlad.');
-        } finally {
-            setIsLoading(false); // End loading
-        }
-    };
+                 const response = await fetch('/api/translateGpt4o', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ prompt, text: finalTextToSend }),
+                        });
+                
+                        const data = await response.json();
+                        setOutput(data.result || '⚠️ Odpověď je prázdná.');
+                        setStatusMessage('✅ Překlad úspěšně dokončen.');
+                    } catch (error) {
+                        console.error('Frontend error:', error);
+                        setOutput('⚠️ Došlo k chybě při zpracování.');
+                        setStatusMessage('⚠️ Došlo k chybě při zpracování požadavku na překlad.');
+                    } finally {
+                        clearInterval(countdownInterval);
+                        setIsLoading(false);
+                    }
+                };
 
     // Clears all input and output fields
     const handleClear = () => {
@@ -327,7 +333,6 @@ const Home = () => {
         setIsLoading(false);
         setSeconds(0);
         setSelectedType(null); // Reset selected type as well
-        // setErrorMessage(null); // This line was commented out in previous versions
     };
 
     // Renders the structured output from the API response
