@@ -64,7 +64,7 @@ const Home = () => {
                     // Start countdown timer
                     const countdownInterval = setInterval(() => {
                         secondsElapsed++;
-                        setStatusMessage(`📷 Rozpoznávám text. Může to chvíli trvat: ${progress}% (${secondsElapsed}s)`);
+                        setStatusMessage(`Rozpoznávám text. Může to chvíli trvat: ${progress}% (${secondsElapsed}s)`);
                     }, 1000);
                 
                     try {
@@ -76,7 +76,7 @@ const Home = () => {
                                     if (m.status === 'recognizing text') {
                                         progress = Math.round(m.progress * 100);
                                         // Update message with current progress + last known seconds
-                                        setStatusMessage(`📷 Rozpoznávám text: ${progress}% (${secondsElapsed}s)`);
+                                        setStatusMessage(`Rozpoznávám text. Může to chvíli trvat: ${progress}% (${secondsElapsed}s)`);
                                     }
                                 },
                             }
@@ -482,9 +482,6 @@ const Home = () => {
                             <span className="animate-spin text-xl" title="Probíhá zpracování">🔄</span>
                         )}
                         <span>{statusMessage}</span>
-                        {isLoading && isProcessingMessage(statusMessage) && (
-                            <span className="ml-2">({seconds}s)</span>
-                        )}
                     </div>
                 )}
 
