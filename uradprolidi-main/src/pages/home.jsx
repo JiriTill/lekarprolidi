@@ -28,6 +28,18 @@ const Home = () => {
     const fileUploadRef = useRef(null);
     const cameraCaptureRef = useRef(null);
 
+        // test
+        useEffect(() => {
+            const testWorker = new Worker('/worker.min.js');
+            testWorker.onmessage = (e) => {
+                console.log('Worker message:', e.data);
+            };
+            testWorker.onerror = (e) => {
+                console.error('Worker error:', e.message);
+            };
+        }, []);
+
+
     // Effect to initialize Tesseract.js worker <--- THIS ENTIRE useEffect BLOCK IS CRUCIAL
            const initializeTesseract = useCallback(async () => {
                 if (worker) return;
