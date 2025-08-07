@@ -48,8 +48,13 @@ const Home = () => {
                     });
             
                     await newWorker.load();
+                    setStatusMessage('✅ Worker loaded');
+                    
                     await newWorker.loadLanguage('ces');
+                    setStatusMessage('✅ Jazyk ces nahrán');
+                    
                     await newWorker.initialize('ces');
+                    setStatusMessage('✅ OCR engine připraven.');
             
                     setWorker(newWorker);
                     setIsTesseractReady(true);
