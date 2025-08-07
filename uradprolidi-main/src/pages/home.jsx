@@ -51,36 +51,48 @@ const Home = () => {
         });
     };
     
-    // OCR function using the initialized Tesseract.js worker <--- MODIFIED runOCR
-        const runOCR = async (imageBase64) => {
-            if (typeof window.Tesseract === 'undefined') {
-                setStatusMessage('❌ Tesseract není načten. Zkuste prosím obnovit stránku za chvíli.');
-                return '';
-                }
-            setStatusMessage('📷 Spouštím rozpoznávání textu (OCR)...');
-            try {
-                const result = await window.Tesseract.recognize(
-                    imageBase64,
-                    'ces',
-                    {
-                        langPath: '/tesseract-data/',
-                        logger: m => {
-                            if (m.status === 'recognizing text') {
-                                setStatusMessage(`📷 Rozpoznávám text: ${Math.round(m.progress * 100)}%`);
-                            } else {
-                                setStatusMessage(`🔧 ${m.status} (${Math.round(m.progress * 100)}%)`);
-                            }
-                        }
+    // OCR function using the initialized Tesseract.js worker
+                       const runOCR = async (imageBase64) => {
+                    if (typeof window.Tesseract === 'undefined') {
+                        setStatusMessage('❌ Tesseract není načten.');
+                        return '';
                     }
-                );
-                setStatusMessage('✅ OCR dokončeno.');
-                return result.data.text;
-            } catch (error) {
-                console.error('OCR chyba:', error);
-                setStatusMessage('⚠️ Chyba při rozpoznávání textu (OCR)');
-                return '';
-            }
-        };
+                
+                    let progress = 0;
+                    let secondsElapsed = 0;
+                
+                    // Start countdown timer
+                    const countdownInterval = setInterval(() => {
+                        secondsElapsed++;
+                        setStatusMessage(`📷 Rozpoznávám text. Může to chvíli trvat: ${progress}% (${secondsElapsed}s)`);
+                    }, 1000);
+                
+                    try {
+                        const result = await window.Tesseract.recognize(
+                            imageBase64,
+                            'ces',
+                            {
+                                logger: (m) => {
+                                    if (m.status === 'recognizing text') {
+                                        progress = Math.round(m.progress * 100);
+                                        // Update message with current progress + last known seconds
+                                        setStatusMessage(`📷 Rozpoznávám text: ${progress}% (${secondsElapsed}s)`);
+                                    }
+                                },
+                            }
+                        );
+                
+                        setStatusMessage('✅ Rozpoznání textu dokončeno.');
+                        return result.data.text;
+                    } catch (err) {
+                        console.error('OCR chyba:', err);
+                        setStatusMessage('⚠️ Chyba při rozpoznávání textu (OCR): ' + err.message);
+                        return '';
+                    } finally {
+                        clearInterval(countdownInterval);
+                    }
+                };
+
 
     // Consolidated handler for all file uploads (PDF and general images)
     const handleFileUpload = async (event) => {
