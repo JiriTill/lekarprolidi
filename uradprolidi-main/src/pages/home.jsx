@@ -478,8 +478,8 @@ const Home = () => {
                         (statusMessage.startsWith('⚠️') ? 'bg-red-100 text-red-800 border border-red-200' :
                         'bg-blue-100 text-blue-800 border border-blue-200') // General processing messages
                     }`}>
-                        {isLoading && isProcessingMessage(statusMessage) && (
-                            <span className="animate-spin text-xl">🔄</span>
+                        {isLoading && (
+                            <span className="animate-spin text-xl" title="Probíhá zpracování">🔄</span>
                         )}
                         <span>{statusMessage}</span>
                         {isLoading && isProcessingMessage(statusMessage) && (
