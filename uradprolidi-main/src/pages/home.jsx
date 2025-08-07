@@ -48,15 +48,15 @@ const Home = () => {
             
                 try {
                     const newWorker = await createWorker({
-                        workerPath: '/worker.min.js', // Moved to root
-                        langPath: '/tesseract-data/',
-                        logger: m => {
-                            if (m.status === 'recognizing text') {
-                                setStatusMessage(`📷 Rozpoznávám text: ${Math.round(m.progress * 100)}%`);
-                            } else {
-                                setStatusMessage(`🔧 ${m.status} (${Math.round(m.progress * 100)}%)`);
-                            }
-                        },
+                      workerPath: 'https://unpkg.com/tesseract.js@2.1.5/dist/worker.min.js', // CDN!
+                      langPath: '/tesseract-data/', // Keep language local
+                      logger: m => {
+                        if (m.status === 'recognizing text') {
+                          setStatusMessage(`📷 Rozpoznávám text: ${Math.round(m.progress * 100)}%`);
+                        } else {
+                          setStatusMessage(`🔧 ${m.status} (${Math.round(m.progress * 100)}%)`);
+                        }
+                      },
                     });
             
                     await newWorker.load();
