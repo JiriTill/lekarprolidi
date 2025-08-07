@@ -406,7 +406,7 @@ const Home = () => {
                           }
                         }}
                       >
-                        <span className="mr-2">📁</span> Nahrát dokument (Obrázek .jpg, .jpeg, .png)
+                        <span className="mr-2">📁</span> Nahrát obrázek (.jpg, .jpeg, .png)
                       </button>
                       <button
                         className="flex-1 bg-blue-500 text-white py-3 rounded-lg text-lg font-semibold hover:bg-blue-600 transition shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
