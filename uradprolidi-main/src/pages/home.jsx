@@ -4,7 +4,6 @@ import { Link } from 'react-router-dom';
 import Footer from '../components/Footer';
 import { pdfToImages } from '../utils/pdfToImages';
 import * as pdfjsLib from 'pdfjs-dist/build/pdf';
-import { createWorker } from 'tesseract.js'; // Ensure createWorker is imported
 
 // Configure PDF.js worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = `/pdfjs/pdf.worker.mjs`;
@@ -21,62 +20,10 @@ const Home = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [seconds, setSeconds] = useState(0);
     const [selectedType, setSelectedType] = useState(null);
-    const [isTesseractReady, setIsTesseractReady] = useState(false); // <--- THIS MUST BE FALSE
-    const [worker, setWorker] = useState(null); // <--- THIS MUST BE PRESENT
 
     // Refs for hidden file input elements
     const fileUploadRef = useRef(null);
     const cameraCaptureRef = useRef(null);
-
-        // test
-        useEffect(() => {
-            const testWorker = new Worker('/worker.min.js');
-            testWorker.onmessage = (e) => {
-                console.log('Worker message:', e.data);
-            };
-            testWorker.onerror = (e) => {
-                console.error('Worker error:', e.message);
-            };
-        }, []);
-
-
-    // Effect to initialize Tesseract.js worker <--- THIS ENTIRE useEffect BLOCK IS CRUCIAL
-           const initializeTesseract = useCallback(async () => {
-                if (worker) return;
-                setStatusMessage('Načítám OCR engine...');
-                setIsTesseractReady(false);
-            
-                try {
-                    const newWorker = await createWorker({
-                      workerPath: 'https://unpkg.com/tesseract.js@2.1.5/dist/worker.min.js', // CDN!
-                      langPath: '/tesseract-data/', // Keep language local
-                      logger: m => {
-                        if (m.status === 'recognizing text') {
-                          setStatusMessage(`📷 Rozpoznávám text: ${Math.round(m.progress * 100)}%`);
-                        } else {
-                          setStatusMessage(`🔧 ${m.status} (${Math.round(m.progress * 100)}%)`);
-                        }
-                      },
-                    });
-            
-                    await newWorker.load();
-                    setStatusMessage('✅ Worker loaded');
-                    
-                    await newWorker.loadLanguage('ces');
-                    setStatusMessage('✅ Jazyk ces nahrán');
-                    
-                    await newWorker.initialize('ces');
-                    setStatusMessage('✅ OCR engine připraven.');
-            
-                    setWorker(newWorker);
-                    setIsTesseractReady(true);
-                    setStatusMessage('OCR engine připraven.');
-                } catch (error) {
-                    console.error('Tesseract init failed:', error);
-                    setStatusMessage('❌ Nepodařilo se načíst OCR engine.');
-                    setIsTesseractReady(false);
-                }
-            }, [worker]);
 
     // Function to convert File object to Base64 for OCR processing
     const convertFileToBase64 = (file) => {
@@ -95,23 +42,31 @@ const Home = () => {
         }, [initializeTesseract]);
     
     // OCR function using the initialized Tesseract.js worker <--- MODIFIED runOCR
-    const runOCR = async (imageBase64) => {
-        if (!worker) { // Ensure the worker is initialized before attempting OCR
-            console.error("Tesseract worker is not initialized.");
-            setStatusMessage("❌ Tesseract engine se nenačetl správně. Zkuste obnovit stránku.");
-            return '';
-        }
-        try {
+        const runOCR = async (imageBase64) => {
             setStatusMessage('📷 Spouštím rozpoznávání textu (OCR)...');
-            const result = await worker.recognize(imageBase64); // <--- USE THE WORKER INSTANCE
-            setStatusMessage('');
-            return result.data.text;
-        } catch (error) {
-            console.error('OCR error:', error);
-            setStatusMessage('⚠️ Nepodařilo se spustit OCR. Zkuste prosím jiný dokument nebo text.');
-            return '';
-        }
-    };
+            try {
+                const result = await window.Tesseract.recognize(
+                    imageBase64,
+                    'ces',
+                    {
+                        langPath: '/tesseract-data/',
+                        logger: m => {
+                            if (m.status === 'recognizing text') {
+                                setStatusMessage(`📷 Rozpoznávám text: ${Math.round(m.progress * 100)}%`);
+                            } else {
+                                setStatusMessage(`🔧 ${m.status} (${Math.round(m.progress * 100)}%)`);
+                            }
+                        }
+                    }
+                );
+                setStatusMessage('✅ OCR dokončeno.');
+                return result.data.text;
+            } catch (error) {
+                console.error('OCR chyba:', error);
+                setStatusMessage('⚠️ Chyba při rozpoznávání textu (OCR)');
+                return '';
+            }
+        };
 
     // Consolidated handler for all file uploads (PDF and general images)
     const handleFileUpload = async (event) => {
@@ -488,14 +443,12 @@ const Home = () => {
                             setStatusMessage('⚠️ Chyba: Souborový vstup není dostupný. Zkuste obnovit stránku.');
                           }
                         }}
-                        disabled={isLoading || !isTesseractReady}
                       >
                         <span className="mr-2">📁</span> Nahrát dokument (PDF/Obrázek)
                       </button>
                       <button
                         className="flex-1 bg-blue-500 text-white py-3 rounded-lg text-lg font-semibold hover:bg-blue-600 transition shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
                         onClick={() => cameraCaptureRef.current.click()}
-                        disabled={isLoading || !isTesseractReady}
                       >
                         <span className="mr-2">📸</span> Vyfotit dokument mobilem
                       </button>
