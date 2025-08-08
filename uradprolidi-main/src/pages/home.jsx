@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import FeedbackForm from '../components/FeedbackForm';
 import { Link } from 'react-router-dom';
 import Footer from '../components/Footer';
+import { resizeImageBase64 } from '../components/ocrUtils';
 
 // Combined and corrected Home component
 const Home = () => {
@@ -107,7 +108,8 @@ const Home = () => {
                     
                       try {
                         const base64 = await convertFileToBase64(file);
-                        const extractedText = await runOCR(base64);
+                        const resizedBase64 = await resizeImageBase64(base64);
+                        const extractedText = await runOCR(resizedBase64);
                     
                         if (extractedText.trim().length > 10) {
                           setUploadedFileTextForApi(extractedText);
@@ -137,7 +139,8 @@ const Home = () => {
 
         try {
             const base64 = await convertFileToBase64(file);
-            const extractedText = await runOCR(base64);
+            const resizedBase64 = await resizeImageBase64(base64);
+            const extractedText = await runOCR(resizedBase64);
 
             if (extractedText.trim().length > 10) {
                 setUploadedFileTextForApi(extractedText);
