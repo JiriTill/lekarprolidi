@@ -49,18 +49,18 @@ export default function HowItWorks() {
 
         <h2 className="text-xl font-semibold mt-6 mb-2 text-gray-900">💸 Podpora projektu</h2>
         <p className="mb-4 text-gray-800 leading-relaxed">
-          Abychom mohli hradit náklady na hosting a nezbytné AI nástroje, zobrazujeme na stránce reklamy od **Google Ads**. Tyto reklamy jsou nezbytné pro udržení chodu a rozvoj celého projektu.
+          Abychom mohli hradit náklady na hosting a nezbytné AI nástroje, zobrazujeme na stránce reklamy od <strong>Google Ads</strong>. Tyto reklamy jsou nezbytné pro udržení chodu a rozvoj celého projektu.
         </p>
 
         <h2 className="text-xl font-semibold mt-6 mb-2 text-gray-900">🔒 Soukromí a bezpečnost</h2>
         <p className="mb-4 text-gray-800 leading-relaxed">
-          Vaše dokumenty se **neukládají**. Vaše nahraná data nejsou spojena s reklamami a nejsou sledována. Výstup se zobrazí pouze vám a po dokončení se nikde neuchovává.
+          Vaše dokumenty se <strong>neukládají</strong>**. Vaše nahraná data nejsou spojena s reklamami a nejsou sledována. Výstup se zobrazí pouze vám a po dokončení se nikde neuchovává.
         </p>
         <p className="mb-4 text-gray-800 leading-relaxed">
           Obsah dokumentu je automaticky odesílán k překladu do služby OpenAI, kde dojde ke zpracování pomocí umělé inteligence. Žádný člověk obsah nečte, vše probíhá strojově.
         </p>
         <p className="mb-4 text-gray-800 leading-relaxed">
-          Přesto doporučuji – nejen zde, ale obecně na internetu – **nikdy neposílejte osobní údaje** jako rodné číslo, datum narození, adresu nebo jiné citlivé informace, pokud to není nezbytně nutné. Je to základní pravidlo digitální bezpečnosti.
+          Přesto doporučuji – nejen zde, ale obecně na internetu – <strong>nikdy neposílejte osobní údaje</strong> jako rodné číslo, datum narození, adresu nebo jiné citlivé informace, pokud to není nezbytně nutné. Je to základní pravidlo digitální bezpečnosti.
         </p>
 
           <Link
