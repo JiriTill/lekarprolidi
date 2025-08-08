@@ -17,7 +17,7 @@ export default function About() {
         </p>
 
         <p className="mb-4 text-gray-800 leading-relaxed">
-          <strong>Lékař pro lidi</strong> využívá umělou inteligenci a **rozpoznávání textu z obrázků**, aby přeložil lékařskou zprávu či rozbor krve do jazyka, kterému rozumí i laik. Cílem je, abyste věděli, co se děje s vaším tělem — bez zbytečného stresu.
+          <strong>Lékař pro lidi</strong> využívá umělou inteligenci a <strong>rozpoznávání textu z obrázků</strong>, aby přeložil lékařskou zprávu či rozbor krve do jazyka, kterému rozumí i laik. Cílem je, abyste věděli, co se děje s vaším tělem — bez zbytečného stresu.
         </p>
 
         <div className="flex justify-center my-6">
@@ -39,7 +39,7 @@ export default function About() {
         {/* --- Nová sekce pro Google Ads --- */}
         <h2 className="text-2xl font-bold mt-12 mb-4 text-gray-900">Podpora projektu</h2>
         <p className="mb-4 text-gray-800 leading-relaxed">
-          Provoz aplikace a pokrytí nákladů na hosting a nezbytné AI nástroje jsou financovány prostřednictvím reklam od **Google Ads**. Tyto reklamy generují jen velmi malý příjem, který slouží výhradně k udržení a rozvoji projektu.
+          Provoz aplikace a pokrytí nákladů na hosting a nezbytné AI nástroje jsou financovány prostřednictvím reklam od <strong>Google Ads</strong>. Tyto reklamy generují jen velmi malý příjem, který slouží výhradně k udržení a rozvoji projektu.
         </p>
 
           <Link
