@@ -168,7 +168,6 @@ const Home = () => {
                 .replaceAll("**Co to znamená:**", "ℹ️ **Co to znamená:**")
                 .replaceAll("**Hodnota v normě?:**", "📊 **Hodnota v normě?:**")
                 .replaceAll("Doporučuje se konzultace s lékařem", "Doporučuje se konzultace s lékařem ⚠️")
-                .replace("🛡️ Tento výstup je určen pouze pro informativní účely", "🛡️ Tento výstup je určen pouze pro informativní účely.\n\n💡 Pokud některé výsledky nejsou jasné, doporučuje se osobní konzultace.");
         };
 
     // Handles the submission of processed text to the API
