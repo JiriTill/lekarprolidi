@@ -14,10 +14,11 @@ export default function GDPR() {
 
         <h2 className="text-xl font-semibold mt-6 mb-2 text-gray-900">🔄 Jak probíhá zpracování</h2>
         <p className="mb-4 text-gray-800 leading-relaxed">
-          Vaše zpráva, rozbor nebo nahraný obrázek je odeslán přes zabezpečené připojení na servery <strong>OpenAI</strong>, kde proběhne analýza a přepis do srozumitelné lidské řeči pomocí umělé inteligence.
+          Vaše vstupní data, ať už se jedná o text z nahraného dokumentu nebo fotografii pořízenou kamerou, jsou nejprve zpracována přímo ve vašem prohlížeči pomocí technologie **OCR (Optical Character Recognition)**, která převede text z obrázku do digitální podoby. 
+          Následně je tento digitální text odeslán přes zabezpečené připojení na servery **OpenAI**, kde proběhne analýza a přepis do srozumitelné lidské řeči pomocí umělé inteligence.
         </p>
         <p className="mb-4 text-gray-800 leading-relaxed">
-          OpenAI je mezinárodní technologická společnost se sídlem v USA, která se zavázala k dodržování přísných bezpečnostních pravidel a zásad zpracování dat, včetně <strong>GDPR kompatibility</strong>. Více informací naleznete zde: <a href="https://openai.com/policies/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">OpenAI Privacy Policy</a>.
+          OpenAI je mezinárodní technologická společnost se sídlem v USA, která se zavázala k dodržování přísných bezpečnostních pravidel a zásad zpracování dat, včetně **GDPR kompatibility**. Více informací naleznete zde: <a href="https://openai.com/policies/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">OpenAI Privacy Policy</a>.
         </p>
 
         <h2 className="text-xl font-semibold mt-6 mb-2 text-gray-900">📊 Google Ads a sledování</h2>
@@ -59,12 +60,13 @@ export default function GDPR() {
           V případě dotazů mě můžete kontaktovat prostřednictvím formuláře na stránce <Link to="/o-projektu" className="text-blue-600 hover:underline">O projektu</Link>.
         </p>
 
-        <Link
-          to="/"
-          className="inline-block mt-8 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-        >
-          Zpět k překladu do lidské řeči
-        </Link>
+          <Link
+            to="/"
+            onClick={() => window.scrollTo(0, 0)}
+            className="inline-block mt-8 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+          >
+            Zpět k překladu do lidské řeči
+          </Link>
       </main>
 
       <Footer />
