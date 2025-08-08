@@ -18,7 +18,6 @@ export default function HowItWorks() {
         </p>
         <ul className="list-disc list-inside mb-4 text-gray-800">
           <li>vložit text lékařské zprávy ručně,</li>
-          <li>nahrát PDF soubor,</li>
           <li>přiložit fotku nebo sken zprávy,</li>
           <li>vyfotit dokument přímo z mobilu.</li>
         </ul>
@@ -48,23 +47,29 @@ export default function HowItWorks() {
           Výstupem je přehledný a jednoduchý výklad: <em>co je napsáno, co se po vás chce, kdy to případně udělat a proč.</em> Nic víc, nic míň – bez diagnóz a bez doporučení.
         </p>
 
+        <h2 className="text-xl font-semibold mt-6 mb-2 text-gray-900">💸 Podpora projektu</h2>
+        <p className="mb-4 text-gray-800 leading-relaxed">
+          Abychom mohli hradit náklady na hosting a nezbytné AI nástroje, zobrazujeme na stránce reklamy od **Google Ads**. Tyto reklamy jsou nezbytné pro udržení chodu a rozvoj celého projektu.
+        </p>
+
         <h2 className="text-xl font-semibold mt-6 mb-2 text-gray-900">🔒 Soukromí a bezpečnost</h2>
         <p className="mb-4 text-gray-800 leading-relaxed">
-          Vaše dokumenty se <strong>neukládají</strong>. Nepoužíváme žádné trackery, cookies ani reklamy. Výstup se zobrazí pouze vám a po dokončení se nikde neuchovává.
+          Vaše dokumenty se **neukládají**. Vaše nahraná data nejsou spojena s reklamami a nejsou sledována. Výstup se zobrazí pouze vám a po dokončení se nikde neuchovává.
         </p>
         <p className="mb-4 text-gray-800 leading-relaxed">
           Obsah dokumentu je automaticky odesílán k překladu do služby OpenAI, kde dojde ke zpracování pomocí umělé inteligence. Žádný člověk obsah nečte, vše probíhá strojově.
         </p>
         <p className="mb-4 text-gray-800 leading-relaxed">
-          Přesto doporučuji – nejen zde, ale obecně na internetu – <strong>nikdy neposílejte osobní údaje</strong> jako rodné číslo, datum narození, adresu nebo jiné citlivé informace, pokud to není nezbytně nutné. Je to základní pravidlo digitální bezpečnosti.
+          Přesto doporučuji – nejen zde, ale obecně na internetu – **nikdy neposílejte osobní údaje** jako rodné číslo, datum narození, adresu nebo jiné citlivé informace, pokud to není nezbytně nutné. Je to základní pravidlo digitální bezpečnosti.
         </p>
 
-        <Link
-          to="/"
-          className="inline-block mt-8 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-        >
-          Zpět k překladu do lidské řeči
-        </Link>
+          <Link
+            to="/"
+            onClick={() => window.scrollTo(0, 0)}
+            className="inline-block mt-8 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+          >
+            Zpět k překladu do lidské řeči
+          </Link>
       </main>
 
       <Footer />
