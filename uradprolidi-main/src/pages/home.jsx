@@ -359,7 +359,7 @@ const Home = () => {
                     <p className="font-bold mb-3 text-lg">Jak to funguje?</p>
                     <ul className="list-disc list-inside space-y-2">
                         <li>Vyberte, zda se jedná o Lékařskou zprávu nebo Rozbor krve.</li>
-                        <li>Vložte text z dokumentu do textového pole, nebo nahrajte PDF či fotografii.</li>
+                        <li>Vložte text z dokumentu do textového pole, nahrajte obrázek nebo vyfoťte mobile.</li>
                         <li>Souhlaste s podmínkami.</li>
                         <li>Klikněte na "Přelož do lidské řeči" a vyčkejte na překlad.</li>
                     </ul>
