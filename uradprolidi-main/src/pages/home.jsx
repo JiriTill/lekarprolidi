@@ -160,6 +160,17 @@ const Home = () => {
         }
     };
 
+    // Enhances GPT output for blood test results
+        const enhanceBloodTestOutput = (rawText) => {
+            return rawText
+                .replaceAll("**Název parametru:**", "🧬 **Název parametru:**")
+                .replaceAll("**Naměřená hodnota:**", "📏 **Naměřená hodnota:**")
+                .replaceAll("**Co to znamená:**", "ℹ️ **Co to znamená:**")
+                .replaceAll("**Hodnota v normě?:**", "📊 **Hodnota v normě?:**")
+                .replaceAll("Doporučuje se konzultace s lékařem", "Doporučuje se konzultace s lékařem ⚠️")
+                .replace("🛡️ Tento výstup je určen pouze pro informativní účely", "🛡️ Tento výstup je určen pouze pro informativní účely.\n\n💡 Pokud některé výsledky nejsou jasné, doporučuje se osobní konzultace.");
+        };
+
     // Handles the submission of processed text to the API
         const handleSubmit = async () => {
             if (!selectedType) {
@@ -200,14 +211,11 @@ const Home = () => {
                     🏥 Oddělení / specializace:
                     (např. neurologie, urologie; pokud není uvedeno, napiš „Není uvedeno“)
 
-                    📄 Co se zjistilo:
-                    (stručně popiš hlavní zjištění ze zprávy, co bylo pozorováno)
-
                     🧪 Jaká vyšetření proběhla:
                     (např. ultrazvuk, krevní testy, RTG; pokud nejsou zmíněny, napiš „Není uvedeno“)
 
                     📋 Shrnutí lékařského nálezu:
-                    (převyprávěj nález jednoduše, bez lékařské terminologie, ale bez vkládání domněnek)
+                    (převyprávěj nález jednoduše, bez lékařské terminologie a bez vkládání domněnek)
 
                     🧠 Vysvětlení klíčových pojmů:
                     (přehled použitých odborných termínů a co znamenají, např. „CRP – zánětlivý ukazatel v krvi“)
@@ -240,7 +248,7 @@ const Home = () => {
                     (1–2 věty, co daný parametr v těle dělá, proč se měří)
                     **Hodnota v normě?:**
                     (napiš „v normě“, „mírně mimo normu“ nebo „výrazně mimo normu“; při posledním můžeš dodat „Doporučuje se konzultace s lékařem“)
-                    📌 Zachovej pořadí parametrů tak, jak jsou ve vstupu, a seskup je logicky, pokud je to vhodné (např. jaterní testy, krevní obraz atd.).
+                    📌 Zachovej pořadí parametrů tak, jak jsou ve vstupu, a seskup je logicky, pokud je to vhodné (např. ⚙️ jaterní testy, 🔬 krevní obraz, 🧪 Metabolické ukazatele, atd.).
 
                     Na závěr připoj poznámku:
 
@@ -254,7 +262,9 @@ const Home = () => {
                         });
                 
                         const data = await response.json();
-                        setOutput(data.result || '⚠️ Odpověď je prázdná.');
+                        const enhancedResult = selectedType === 'rozbor' ? enhanceBloodTestOutput(data.result) : data.result;
+                        setOutput(enhancedResult || '⚠️ Odpověď je prázdná.');
+
                         setStatusMessage('✅ Překlad úspěšně dokončen.');
                     } catch (error) {
                         console.error('Frontend error:', error);
