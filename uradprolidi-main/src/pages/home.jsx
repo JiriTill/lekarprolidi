@@ -313,6 +313,33 @@ const Home = () => {
             </div>
         );
     };
+    
+        const renderBloodOutput = () => {
+        if (!output) return null;
+    
+        const cards = output
+            .split(/(?=🧬 \*\*Název parametru:\*\*)/)
+            .filter(s => s.trim());
+    
+        const mdToHtml = (txt) =>
+            txt
+                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>') // **bold**
+                .replace(/\n{2,}/g, '</p><p>')                    // paragraph breaks
+                .replace(/\n/g, '<br/>');                         // single line breaks
+    
+        return (
+            <div className="space-y-4">
+                {cards.map((card, i) => (
+                    <div key={i} className="bg-gray-50 border border-gray-200 p-4 rounded-lg shadow-sm">
+                        <div
+                            className="text-gray-800 text-base whitespace-pre-wrap break-words"
+                            dangerouslySetInnerHTML={{ __html: `<p>${mdToHtml(card.trim())}</p>` }}
+                        />
+                    </div>
+                ))}
+            </div>
+        );
+    };
 
     // Helper to determine if the message is a "processing" message (not final success/error)
     const isProcessingMessage = (msg) => {
@@ -506,11 +533,11 @@ const Home = () => {
 
                 {/* Output section */}
                 {output && (
-                    <div className="mt-12 border-t pt-8 border-gray-200">
-                        <h2 className="text-3xl font-bold mb-6 text-blue-800 text-center">Výsledek překladu:</h2>
-                        {renderStructuredOutput()}
-                        <FeedbackForm />
-                    </div>
+                  <div className="mt-12 border-t pt-8 border-gray-200">
+                    <h2 className="text-3xl font-bold mb-6 text-blue-800 text-center">Výsledek překladu:</h2>
+                    {selectedType === 'rozbor' ? renderBloodOutput() : renderStructuredOutput()}
+                    <FeedbackForm />
+                  </div>
                 )}
             </div>
             <Footer />
