@@ -1,13 +1,20 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 export default function Footer() {
+  const navigate = useNavigate();
+
+  const handleClick = (path) => {
+    navigate(path);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
     <footer className="text-center text-sm text-gray-500 py-6 border-t mt-8">
       <div className="space-x-4">
-        <Link to="/o-projektu" className="hover:underline">O projektu</Link>
-        <Link to="/jak-to-funguje" className="hover:underline">Jak to funguje</Link>
-        <Link to="/gdpr" className="hover:underline">Zpracování dat</Link>
+        <button onClick={() => handleClick('/o-projektu')} className="hover:underline">O projektu</button>
+        <button onClick={() => handleClick('/jak-to-funguje')} className="hover:underline">Jak to funguje</button>
+        <button onClick={() => handleClick('/gdpr')} className="hover:underline">Zpracování dat</button>
         <a
           href="https://uradprolidi.vercel.app"
           target="_blank"
